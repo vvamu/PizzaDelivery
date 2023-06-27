@@ -36,10 +36,10 @@ public class PizzaController : ControllerBase
         return Ok(await _context.CreateAsync(pizza));
     }
 
-    [HttpDelete(Name = "DeletePizza")]
-    public async Task<ActionResult<Pizza>> Delete(Pizza pizza)
+    [HttpDelete("{id}")]
+    public async Task<ActionResult<Pizza>> Delete(Guid id)
     {
-        var result = await _context.DeleteAsync(pizza.Id);
+        var result = await _context.DeleteAsync(id);
         if (result == null) return BadRequest(ModelState);
         return Ok(result);
     }

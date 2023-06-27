@@ -9,7 +9,7 @@ public class PromocodeRepository : IRepository<Promocode>
 {
     private ApplicationDbContext _context;
 
-    PromocodeRepository(ApplicationDbContext context)
+    public PromocodeRepository(ApplicationDbContext context)
     {
         _context = context;
     }

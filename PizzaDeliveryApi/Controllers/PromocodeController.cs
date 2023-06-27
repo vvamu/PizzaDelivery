@@ -39,9 +39,9 @@ public class PromocodeController : ControllerBase
     }
 
     [HttpDelete(Name = "DeletePromocode")]
-    public async Task<ActionResult<Promocode>> Delete(Promocode promocode)
+    public async Task<ActionResult<Promocode>> Delete(Guid id)
     {
-        var result = await _context.DeleteAsync(promocode.Id);
+        var result = await _context.DeleteAsync(id);
         if (result == null) return BadRequest(ModelState);
         return Ok(result);
     }

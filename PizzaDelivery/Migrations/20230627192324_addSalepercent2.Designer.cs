@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PizzaDelivery.Data;
 
@@ -10,9 +11,11 @@ using PizzaDelivery.Data;
 namespace PizzaDelivery.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230627192324_addSalepercent2")]
+    partial class addSalepercent2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.1");
@@ -246,12 +249,6 @@ namespace PizzaDelivery.Migrations
                     b.Property<Guid?>("PromocodeId")
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("ShoppindCardId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("ShoppingCartId")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -259,8 +256,6 @@ namespace PizzaDelivery.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("PromocodeId");
-
-                    b.HasIndex("ShoppingCartId");
 
                     b.HasIndex("UserId");
 
@@ -314,47 +309,12 @@ namespace PizzaDelivery.Migrations
 
                     b.Property<string>("Value")
                         .IsRequired()
-                        .HasMaxLength(20)
+                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
                     b.ToTable("Promocodes");
-                });
-
-            modelBuilder.Entity("PizzaDelivery.Models.ShoopingCartPizzas", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Amount")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<Guid>("PizzaId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("ShoppingCartId")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PizzaId");
-
-                    b.HasIndex("ShoppingCartId");
-
-                    b.ToTable("ShoopingCartPizzas");
-                });
-
-            modelBuilder.Entity("PizzaDelivery.Models.ShoppingCart", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ShoppingCart");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -414,12 +374,6 @@ namespace PizzaDelivery.Migrations
                         .WithMany()
                         .HasForeignKey("PromocodeId");
 
-                    b.HasOne("PizzaDelivery.Models.ShoppingCart", "ShoppingCart")
-                        .WithMany()
-                        .HasForeignKey("ShoppingCartId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("PizzaDelivery.Models.ApplicationUser", "User")
                         .WithMany("Orders")
                         .HasForeignKey("UserId")
@@ -428,38 +382,12 @@ namespace PizzaDelivery.Migrations
 
                     b.Navigation("Promocode");
 
-                    b.Navigation("ShoppingCart");
-
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("PizzaDelivery.Models.ShoopingCartPizzas", b =>
-                {
-                    b.HasOne("PizzaDelivery.Models.Pizza", "Pizza")
-                        .WithMany()
-                        .HasForeignKey("PizzaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PizzaDelivery.Models.ShoppingCart", "ShoppingCart")
-                        .WithMany("ShoopingCartPizzas")
-                        .HasForeignKey("ShoppingCartId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Pizza");
-
-                    b.Navigation("ShoppingCart");
                 });
 
             modelBuilder.Entity("PizzaDelivery.Models.ApplicationUser", b =>
                 {
                     b.Navigation("Orders");
-                });
-
-            modelBuilder.Entity("PizzaDelivery.Models.ShoppingCart", b =>
-                {
-                    b.Navigation("ShoopingCartPizzas");
                 });
 #pragma warning restore 612, 618
         }

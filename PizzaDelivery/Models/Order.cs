@@ -45,5 +45,11 @@ namespace PizzaDelivery.Models
 
         public ApplicationUser User { get; set; }
 
+        public Guid ShoppindCardId { get; set; }
+        public ShoppingCart ShoppingCart { get; set; }
+
+
+
+
     }
 }

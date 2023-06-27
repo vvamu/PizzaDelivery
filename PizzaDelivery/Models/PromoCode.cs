@@ -7,7 +7,7 @@ namespace PizzaDelivery.Models
 {
     public class Promocode : BaseModel
     {
-        [StringLength(100, MinimumLength = 10)]
+        [StringLength(20, MinimumLength = 5)]
         [RegularExpression("([a-zA-Z0-9 .&'-]+)", ErrorMessage = "The field Name should only include letters and number.")]
         [DataType(DataType.Text)]
         [Required]
