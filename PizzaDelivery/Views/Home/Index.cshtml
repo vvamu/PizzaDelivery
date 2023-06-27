@@ -1,8 +1,27 @@
 ﻿@{
     ViewData["Title"] = "Home Page";
+    var pizzas = ViewBag.pizzas;
+
 }
 
 <div class="text-center">
     <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    <p>Learn this.</p>
 </div>
+<div class="text-center"></div>
+
+@if(pizzas != null && pizzas.Count > 0)
+{
+    @for (int i = 0; i < pizzas.Count; i++)
+    {
+        <div>Pizza - @i</div>   
+    }
+}
+else{
+    <div>Emply list of pizzas</div>
+}
+
+<form>
+<input type="submit" value="Create new" asp-action="CreateNew" asp-controller="Home" />
+</form>
+

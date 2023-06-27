@@ -1,32 +1,60 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using PizzaDelivery.Models;
+using PizzaDelivery.Services;
 using PizzaDelivery.ViewModels;
 using System.Diagnostics;
 
-namespace PizzaDelivery.Controllers
+namespace PizzaDelivery.Controllers;
+
+public class HomeController : Controller
 {
-    public class HomeController : Controller
+    private readonly ILogger<HomeController> _logger;
+    private IPizzaRepository pizzaRepository;
+
+    public HomeController(ILogger<HomeController> logger, IPizzaRepository pizzaRepository)
     {
-        private readonly ILogger<HomeController> _logger;
+        _logger = logger;
+        this.pizzaRepository= pizzaRepository;
+    }
 
-        public HomeController(ILogger<HomeController> logger)
-        {
-            _logger = logger;
-        }
+    public IActionResult Index()
+    {
+        var a = pizzaRepository.GetAllAsync().Result.ToList();
+        ViewBag.pizzas = a.ToList();
+        return View();
+    }
 
-        public IActionResult Index()
-        {
-            return View();
-        }
+    public IActionResult Privacy()
+    {
+        return View();
+    }
 
-        public IActionResult Privacy()
-        {
-            return View();
-        }
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    public IActionResult Error()
+    {
+        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+    }
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
+
+    [AcceptVerbs("Get", "Post")]
+    public IActionResult CheckEmail(string email)
+    {
+        if (email == "admin@mail.ru" || email == "aaa@gmail.com")
+            return Json(false);
+        return Json(true);
+    }
+
+    public IActionResult CreateNew()
+    {
+        var a = new Pizza()
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-        }
+            Name = "Margarita",
+            Ingridients = "Dought Tomatoes Cheese",
+            Price = 10,
+            Desctiption = "Pizza without meat!"
+        };
+        pizzaRepository.CreateAsync(a);
+        var b = pizzaRepository.GetAllAsync();
+        return RedirectToAction("Index");
     }
 }

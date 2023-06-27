@@ -2,14 +2,33 @@
 using Microsoft.EntityFrameworkCore;
 using PizzaDelivery.Models;
 
-namespace PizzaDelivery.Data
+namespace PizzaDelivery.Data;
+
+public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 {
-    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        : base(options)
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-            : base(options)
-        {
-        }
-        
     }
+    //public static string DbPath
+    //{
+    //    get
+    //    {
+    //        var folder = Environment.SpecialFolder.LocalApplicationData;
+    //        var path = Environment.GetFolderPath(folder);
+
+    //        var directory = Directory.CreateDirectory(Path.Join(path, "LiteDb"));
+    //        var db = Path.Join(directory.FullName, "LiteDb.db");
+
+    //        return db;
+    //    }
+    //}
+    //protected override void OnConfiguring(DbContextOptionsBuilder options)
+    //    => options.UseSqlite($"DataSource={DbPath}");
+
+    public DbSet<Promocode> Promocodes { get; set; }
+    public DbSet<Pizza> Pizzas { get; set; }
+    public DbSet<Order> Orders { get; set; }
+
+
 }
