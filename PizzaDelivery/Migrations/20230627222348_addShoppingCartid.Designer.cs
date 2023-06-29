@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PizzaDelivery.Data;
 
@@ -10,9 +11,11 @@ using PizzaDelivery.Data;
 namespace PizzaDelivery.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230627222348_addShoppingCartid")]
+    partial class addShoppingCartid
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.1");
@@ -195,9 +198,6 @@ namespace PizzaDelivery.Migrations
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("ShoppindCardId")
-                        .HasColumnType("TEXT");
-
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("INTEGER");
 
@@ -229,7 +229,6 @@ namespace PizzaDelivery.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Comment")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("DeliveryType")
@@ -243,15 +242,21 @@ namespace PizzaDelivery.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<decimal>("OrderTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("PaymentType")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("PromocodeId")
+                    b.Property<Guid?>("PromocodeId")
                         .HasColumnType("TEXT");
 
-                    b.Property<decimal>("TotalPrice")
-                        .HasPrecision(18, 2)
+                    b.Property<Guid>("ShoppindCardId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ShoppingCartId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("UserId")
@@ -259,6 +264,10 @@ namespace PizzaDelivery.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("PromocodeId");
+
+                    b.HasIndex("ShoppingCartId");
 
                     b.HasIndex("UserId");
 
@@ -320,33 +329,7 @@ namespace PizzaDelivery.Migrations
                     b.ToTable("Promocodes");
                 });
 
-            modelBuilder.Entity("PizzaDelivery.Models.ShoppingCart", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid?>("PromocodeId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("TotalPrice")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PromocodeId");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("ShoppingCart");
-                });
-
-            modelBuilder.Entity("PizzaDelivery.Models.ShoppingCartItem", b =>
+            modelBuilder.Entity("PizzaDelivery.Models.ShoopingCartPizzas", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -354,9 +337,6 @@ namespace PizzaDelivery.Migrations
 
                     b.Property<int>("Amount")
                         .HasColumnType("INTEGER");
-
-                    b.Property<Guid?>("OrderId")
-                        .HasColumnType("TEXT");
 
                     b.Property<Guid>("PizzaId")
                         .HasColumnType("TEXT");
@@ -366,13 +346,22 @@ namespace PizzaDelivery.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OrderId");
-
                     b.HasIndex("PizzaId");
 
                     b.HasIndex("ShoppingCartId");
 
                     b.ToTable("ShoopingCartPizzas");
+                });
+
+            modelBuilder.Entity("PizzaDelivery.Models.ShoppingCart", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ShoppingCart");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -428,38 +417,31 @@ namespace PizzaDelivery.Migrations
 
             modelBuilder.Entity("PizzaDelivery.Models.Order", b =>
                 {
+                    b.HasOne("PizzaDelivery.Models.Promocode", "Promocode")
+                        .WithMany()
+                        .HasForeignKey("PromocodeId");
+
+                    b.HasOne("PizzaDelivery.Models.ShoppingCart", "ShoppingCart")
+                        .WithMany()
+                        .HasForeignKey("ShoppingCartId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("PizzaDelivery.Models.ApplicationUser", "User")
                         .WithMany("Orders")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("PizzaDelivery.Models.ShoppingCart", b =>
-                {
-                    b.HasOne("PizzaDelivery.Models.Promocode", "Promocode")
-                        .WithMany()
-                        .HasForeignKey("PromocodeId");
-
-                    b.HasOne("PizzaDelivery.Models.ApplicationUser", "User")
-                        .WithOne("ShoppingCart")
-                        .HasForeignKey("PizzaDelivery.Models.ShoppingCart", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Promocode");
 
+                    b.Navigation("ShoppingCart");
+
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("PizzaDelivery.Models.ShoppingCartItem", b =>
+            modelBuilder.Entity("PizzaDelivery.Models.ShoopingCartPizzas", b =>
                 {
-                    b.HasOne("PizzaDelivery.Models.Order", null)
-                        .WithMany("ShoppingCartItems")
-                        .HasForeignKey("OrderId");
-
                     b.HasOne("PizzaDelivery.Models.Pizza", "Pizza")
                         .WithMany()
                         .HasForeignKey("PizzaId")
@@ -467,7 +449,7 @@ namespace PizzaDelivery.Migrations
                         .IsRequired();
 
                     b.HasOne("PizzaDelivery.Models.ShoppingCart", "ShoppingCart")
-                        .WithMany("ShoppingCartItems")
+                        .WithMany("ShoopingCartPizzas")
                         .HasForeignKey("ShoppingCartId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -480,19 +462,11 @@ namespace PizzaDelivery.Migrations
             modelBuilder.Entity("PizzaDelivery.Models.ApplicationUser", b =>
                 {
                     b.Navigation("Orders");
-
-                    b.Navigation("ShoppingCart")
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("PizzaDelivery.Models.Order", b =>
-                {
-                    b.Navigation("ShoppingCartItems");
                 });
 
             modelBuilder.Entity("PizzaDelivery.Models.ShoppingCart", b =>
                 {
-                    b.Navigation("ShoppingCartItems");
+                    b.Navigation("ShoopingCartPizzas");
                 });
 #pragma warning restore 612, 618
         }

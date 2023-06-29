@@ -1,65 +1,62 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PizzaDelivery.Data;
+using PizzaDelivery.Helpers;
+using PizzaDelivery.Models.Enums;
+using PizzaDelivery.Services.Interfaces;
 using System.Net;
 
 namespace PizzaDelivery.Services;
 
-public class OrderRepository : IRepository<Order>
+public class OrderRepository : IOrderRepository
 {
     private ApplicationDbContext _context;
+    private IRepository<Promocode> _promocodesRepository;
 
     public OrderRepository(ApplicationDbContext context)
     {
         _context = context;
     }
-    public async Task<Order> GetAsync(Guid id)
-    {
-        return await _context.Orders.FirstOrDefaultAsync(x => x.Id == id);
-    }
-
     public async Task<ICollection<Order>> GetAllAsync()
     {
-        return await _context.Orders.ToListAsync();
-
+        var NotDeliveredOrderStatus = Enum.GetName(typeof(OrderStatus), 1);
+        return await _context.Orders.OrderByDescending(o => o.OrderStatus == "NotDelivered").ThenByDescending(x=>x.OrderDate).ToListAsync();
     }
-    public async Task<Order> CreateAsync(Order item)
+    public async Task<ICollection<Order>> GetNotDeliveredOrdersAsync()
     {
-        if (item == null) return null;
-        //if(item.Promocode ==  null) throw new HttpResponseException(HttpStatusCode.NotFound);
+        return await _context.Orders.OrderByDescending(x => x.OrderDate).Where(o => o.OrderStatus == "NotDelivered").ToListAsync();
+    }
 
-        Guid newGuid = Guid.NewGuid();
-        
+    public async Task<ICollection<Order>> GetAllByUserAsync(string userId)
+    {
+        return await _context.Orders.Include(x=>x.User).Where(x=>x.User.Id== userId).ToListAsync();
+    }
+    public async Task<Order> GetAsync(Guid orderId)
+    {
+        return await _context.Orders.FirstOrDefaultAsync(x => x.Id == orderId);
+    }
+    public async Task<Order> CreateAsync(CreatedOrder item, string userId)
+    {
+        var db_user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId);
+        var db_shoppingCart = await _context.ShoppingCart.Include(x => x.User).FirstOrDefaultAsync(x => x.User.Id == userId);
+        var totalPrice = db_shoppingCart.TotalPrice;
+
+        if (item == null || db_user == null) return null;
+
         var correctItem = new Order()
         {
-            Id = newGuid,
             PaymentType = item.PaymentType,
-            OrderTotal = item.OrderTotal,
             Address = item.Address,
+            TotalPrice = totalPrice,
             DeliveryType= item.DeliveryType,
             Comment= item.Comment,
-            Promocode= item.Promocode,
-            User =item.User
-
+            User = db_user,
+            OrderDate= item.OrderDate,
         };
 
-        await _context.Orders.AddAsync(item);
+        await _context.Orders.AddAsync(correctItem);
         await _context.SaveChangesAsync();
-        return item;
+        return correctItem;
     }
-    public async Task<Order> UpdateAsync(Order item)
-    {
-        await Task.CompletedTask;
-        var promo = _context.Orders.Update(item);
-        await _context.SaveChangesAsync();
 
-        return promo.Entity;
-    }
-    public async Task<Order> DeleteAsync(Guid id)
-    {
-        var promocode = await _context.Orders.FirstOrDefaultAsync(x => x.Id == id);
-        var promo = _context.Orders.Remove(promocode);
-        await _context.SaveChangesAsync();
 
-        return promo.Entity;
-    }
 }

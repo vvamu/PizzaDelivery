@@ -1,4 +1,6 @@
-﻿namespace PizzaDeliveryApi.Controllers;
+﻿using PizzaDelivery.Services.Interfaces;
+
+namespace PizzaDeliveryApi.Controllers;
 
 [ApiController]
 [Route("[controller]")]

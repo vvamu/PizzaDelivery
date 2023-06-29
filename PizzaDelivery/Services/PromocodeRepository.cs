@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PizzaDelivery.Data;
 using PizzaDelivery.Models;
+using PizzaDelivery.Services.Interfaces;
 
 namespace PizzaDelivery.Services;
 
@@ -46,7 +47,10 @@ public class PromocodeRepository : IRepository<Promocode>
         return promo.Entity;
     }
 
-
+    public async Task SaveChangesAsync()
+    {
+        await _context.SaveChangesAsync();
+    }
 
 
 }

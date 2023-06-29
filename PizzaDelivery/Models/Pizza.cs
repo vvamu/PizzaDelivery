@@ -8,8 +8,6 @@ public class Pizza : BaseModel
 {
     public Pizza()
     {
-        //PizzaIngredients = new HashSet<PizzaIngredients>();
-        //Reviews = new HashSet<Reviews>();
         if(ImagePath == string.Empty|| ImagePath == null)
         {
             ImagePath = "E:\\education\\asp\\PizzaDelivery\\PizzaDelivery\\wwwroot\\images\\default.jpg";

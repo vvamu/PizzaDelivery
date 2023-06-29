@@ -5,8 +5,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.Sqlite;
 using PizzaDelivery.Data;
-using PizzaDelivery.Services;
 using Microsoft.Extensions.Options;
+using PizzaDelivery.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,21 +28,33 @@ builder.Services.AddDbContext<ApplicationDbContext>(
     });
 
 
-
 builder.Services.AddTransient<IRepository<Pizza>, PizzaRepository>();
-builder.Services.AddTransient<IRepository<Order>, OrderRepository>();
 builder.Services.AddTransient<IRepository<Promocode>, PromocodeRepository>();
 
 
+builder.Services.AddTransient<IOrderRepository, OrderRepository>();
+builder.Services.AddTransient<IShoppingCartRepository, ShoppingCartRepository>();
+builder.Services.AddTransient<IAuthService, AuthService>();
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 
-builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
-    .AddEntityFrameworkStores<ApplicationDbContext>();
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+    {
+        options.Password.RequiredLength = 5;
+    })
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddDefaultTokenProviders();
 builder.Services.AddControllersWithViews();
 
+builder.Logging.AddConsole();
+
+
 var app = builder.Build();
+
+var logger = app.Services.GetService<ILogger<RepeatingService>>();
+var service = new RepeatingService(logger,app.Services.GetService<IRepository<Promocode>>());
+service.StartAsync(CancellationToken.None);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

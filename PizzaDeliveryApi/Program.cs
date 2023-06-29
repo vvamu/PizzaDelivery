@@ -8,6 +8,11 @@ using Microsoft.EntityFrameworkCore;
 using PizzaDelivery.Data;
 using PizzaDeliveryApi;
 using PizzaDeliveryApi.Controllers;
+using PizzaDelivery.Services.Interfaces;
+using Microsoft.AspNetCore.Identity;
+
+var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+var logger = loggerFactory.CreateLogger<WebApplication>();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +24,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 
+//var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+//var logger = loggerFactory.CreateLogger<WebApplication>();
+
+
 var connectionString = builder.Configuration.GetConnectionString("SqliteConnection");
 //var c = new Microsoft.Data.Sqlite.SqliteConnection($"DataSource={ApplicationDbContext.DbPath}");
 builder.Services.AddDbContext<ApplicationDbContext>(
@@ -28,8 +37,20 @@ builder.Services.AddDbContext<ApplicationDbContext>(
     });
 
 builder.Services.AddTransient<IRepository<Pizza>, PizzaRepository>();
-builder.Services.AddTransient<IRepository<Order>, OrderRepository>();
 builder.Services.AddTransient<IRepository<Promocode>, PromocodeRepository>();
+
+
+builder.Services.AddTransient<IOrderRepository, OrderRepository>();
+builder.Services.AddTransient<IShoppingCartRepository, ShoppingCartRepository>();
+builder.Services.AddTransient<IAuthService, AuthService>();
+
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+{
+    options.Password.RequiredLength = 5;
+})
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddDefaultTokenProviders();
+builder.Services.AddControllersWithViews();
 
 
 var app = builder.Build();

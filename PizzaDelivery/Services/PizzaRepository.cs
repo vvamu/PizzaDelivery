@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PizzaDelivery.Data;
+using PizzaDelivery.Services.Interfaces;
 
 namespace PizzaDelivery.Services;
 
@@ -62,5 +63,9 @@ public class PizzaRepository : IRepository<Pizza>
         await _context.SaveChangesAsync();
 
         return remotedPizza.Entity;
+    }
+    public async Task SaveChangesAsync()
+    {
+        await _context.SaveChangesAsync();
     }
 }

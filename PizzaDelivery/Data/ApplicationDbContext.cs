@@ -26,9 +26,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     //protected override void OnConfiguring(DbContextOptionsBuilder options)
     //    => options.UseSqlite($"DataSource={DbPath}");
 
-    public DbSet<Promocode> Promocodes { get; set; }
     public DbSet<Pizza> Pizzas { get; set; }
     public DbSet<Order> Orders { get; set; }
+    public DbSet<Promocode> Promocodes { get; set; }
+    public DbSet<ShoppingCartItem> ShoopingCartPizzas { get; set; }
+    public DbSet<ShoppingCart> ShoppingCart { get; set; }
+
 
 
 }

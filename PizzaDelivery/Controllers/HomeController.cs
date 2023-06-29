@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using PizzaDelivery.Models;
 using PizzaDelivery.Services;
+using PizzaDelivery.Services.Interfaces;
 using PizzaDelivery.ViewModels;
 using System.Diagnostics;
 
@@ -9,9 +10,9 @@ namespace PizzaDelivery.Controllers;
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
-    private IPizzaRepository pizzaRepository;
+    private IRepository<Pizza> pizzaRepository;
 
-    public HomeController(ILogger<HomeController> logger, IPizzaRepository pizzaRepository)
+    public HomeController(ILogger<HomeController> logger, IRepository<Pizza> pizzaRepository)
     {
         _logger = logger;
         this.pizzaRepository= pizzaRepository;
