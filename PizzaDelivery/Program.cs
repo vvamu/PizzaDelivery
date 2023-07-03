@@ -1,12 +1,19 @@
 global using PizzaDelivery.Models;
 global using PizzaDelivery.Services;
+global using PizzaDelivery.Domain.Models;
+global using PizzaDelivery.Persistence;
+global using PizzaDelivery.Domain.Models.User;
+
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.Sqlite;
-using PizzaDelivery.Data;
 using Microsoft.Extensions.Options;
-using PizzaDelivery.Services.Interfaces;
+using PizzaDelivery.Domain.Models;
+using PizzaDelivery.DomainRealize.Interfaces;
+using PizzaDelivery.Application.Interfaces;
+using PizzaDelivery.DomainRealize.Repository;
+using PizzaDelivery.Application.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,31 +27,31 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 
 var connectionString = builder.Configuration.GetConnectionString("SqliteConnection");
-//var c = new Microsoft.Data.Sqlite.SqliteConnection($"DataSource={ApplicationDbContext.DbPath}");
 builder.Services.AddDbContext<ApplicationDbContext>(
     options => {
         options.UseSqlite(connectionString);
         options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
     });
 
-
 builder.Services.AddTransient<IRepository<Pizza>, PizzaRepository>();
 builder.Services.AddTransient<IRepository<Promocode>, PromocodeRepository>();
 
 
-builder.Services.AddTransient<IOrderRepository, OrderRepository>();
-builder.Services.AddTransient<IShoppingCartRepository, ShoppingCartRepository>();
+builder.Services.AddTransient<IOrderRepository, PizzaDelivery.Application.Services.OrderRepository>();
+builder.Services.AddTransient<IShoppingCartRepository, PizzaDelivery.Application.Services.ShoppingCartRepository>();
 builder.Services.AddTransient<IAuthService, AuthService>();
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+builder.Services.AddRazorPages();
 
 
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+builder.Services.AddIdentity<ApplicationUser,IdentityRole>(options =>
     {
         options.Password.RequiredLength = 5;
     })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
+
 builder.Services.AddControllersWithViews();
 
 builder.Logging.AddConsole();
@@ -53,7 +60,7 @@ builder.Logging.AddConsole();
 var app = builder.Build();
 
 var logger = app.Services.GetService<ILogger<RepeatingService>>();
-var service = new RepeatingService(logger,app.Services.GetService<IRepository<Promocode>>());
+var service = new RepeatingService(logger,app.Services.GetService<IServiceScopeFactory>());
 service.StartAsync(CancellationToken.None);
 
 // Configure the HTTP request pipeline.

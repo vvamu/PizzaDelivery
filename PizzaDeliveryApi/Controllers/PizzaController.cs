@@ -1,9 +1,13 @@
-﻿using PizzaDelivery.Services.Interfaces;
+﻿using PizzaDelivery.Domain.Models;
+using PizzaDelivery.Application.Interfaces;
+using PizzaDelivery.DomainRealize.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace PizzaDeliveryApi.Controllers;
 
 [ApiController]
 [Route("[controller]")]
+[Authorize]
 public class PizzaController : ControllerBase
 {
 
@@ -33,12 +37,14 @@ public class PizzaController : ControllerBase
     }
 
     [HttpPost(Name = "CreatePizza")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<Pizza>> Create(Pizza pizza)
     {
         return Ok(await _context.CreateAsync(pizza));
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<Pizza>> Delete(Guid id)
     {
         var result = await _context.DeleteAsync(id);
@@ -47,6 +53,7 @@ public class PizzaController : ControllerBase
     }
 
     [HttpPut(Name = "UpdatePizza")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<Pizza>> Put(Pizza pizza)
     {
         var result = await _context.UpdateAsync(pizza);

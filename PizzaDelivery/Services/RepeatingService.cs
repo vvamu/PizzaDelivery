@@ -1,4 +1,6 @@
-﻿using PizzaDelivery.Services.Interfaces;
+﻿using PizzaDelivery.Domain.Models;
+using PizzaDelivery.Application.Interfaces;
+using PizzaDelivery.DomainRealize.Interfaces;
 
 namespace PizzaDelivery.Services;
 
@@ -6,35 +8,37 @@ public class RepeatingService : BackgroundService
 {
     private readonly PeriodicTimer _timer = new(TimeSpan.FromHours(1));
     private readonly ILogger<RepeatingService> _logger;
-    private readonly IRepository<Promocode> _promocodeRepository;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
 
-    public RepeatingService(ILogger<RepeatingService> logger, IRepository<Promocode> promocodeRepository)
+    public RepeatingService(ILogger<RepeatingService> logger, IServiceScopeFactory serviceScopeFactory)
     {
         _logger = logger;
-        _promocodeRepository= promocodeRepository;
+        _serviceScopeFactory = serviceScopeFactory;
     }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        //_logger.LogInformation("RepeatingService started.");
-
-        while (!stoppingToken.IsCancellationRequested 
-          && await _timer.WaitForNextTickAsync(stoppingToken))
+        while (!stoppingToken.IsCancellationRequested && await _timer.WaitForNextTickAsync(stoppingToken))
         {
             await DoWorkAsync();
             await Task.Delay(1000, stoppingToken);
         }
-        _logger.LogInformation("RepeatingService stopped.");
-
     }
+
     private async Task DoWorkAsync()
     {
-        //Console.WriteLine(DateTime.Now.ToString("G"));
-       var expiredPromocode = _promocodeRepository.GetAllAsync().Result.FirstOrDefault(x=>x.ExpireDate >= DateTime.Now);
-       if(expiredPromocode != null)
+        using (var scope = _serviceScopeFactory.CreateScope())
         {
-            await _promocodeRepository.DeleteAsync(expiredPromocode.Id);
-            await _promocodeRepository.SaveChangesAsync();
-        }
+            var promocodeRepository = scope.ServiceProvider.GetRequiredService<IRepository<Promocode>>();
 
+            var expiredPromocode = (await promocodeRepository.GetAllAsync())
+                .FirstOrDefault(x => x.ExpireDate == DateTime.Now);
+
+            if (expiredPromocode != null)
+            {
+                await promocodeRepository.DeleteAsync(expiredPromocode.Id);
+                await promocodeRepository.SaveChangesAsync();
+            }
+        }
     }
 }

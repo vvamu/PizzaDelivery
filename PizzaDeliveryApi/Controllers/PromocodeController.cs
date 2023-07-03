@@ -1,10 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using PizzaDelivery.Services.Interfaces;
+﻿using PizzaDelivery.DomainRealize.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace OrderDeliveryApi.Controllers;
 
 [ApiController]
 [Route("[controller]")]
+[Authorize(Roles = "Admin")]
 public class PromocodeController : ControllerBase
 {
 
@@ -18,37 +19,37 @@ public class PromocodeController : ControllerBase
         _context = context;
     }
 
-    [HttpGet(Name = "GetAllPromocodes")]
-    public async Task<ActionResult<ICollection<Promocode>>> GetAll()
+    [HttpGet(Name = "GetAllPromocodesAsync")]
+    public async Task<ActionResult<ICollection<Promocode>>> GetAllAsync()
     {
         var h = _context.GetAllAsync();
         return Ok(h);
     }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<Promocode>> GetOne(Guid id)
+    [HttpGet("{id}", Name = "GetOneAsync")]
+    public async Task<ActionResult<Promocode>> GetOneAsync(Guid id)
     {
         var promocode = await _context.GetAsync(id);
         if (promocode == null) return BadRequest(ModelState);
         return Ok(promocode);
     }
 
-    [HttpPost(Name = "CreatePromocode")]
-    public async Task<ActionResult<Promocode>> Create(Promocode promocode)
+    [HttpPost(Name = "CreatePromocodeAsync")]
+    public async Task<ActionResult<Promocode>> CreateAsync(Promocode promocode)
     {
         return Ok(await _context.CreateAsync(promocode));
     }
 
-    [HttpDelete(Name = "DeletePromocode")]
-    public async Task<ActionResult<Promocode>> Delete(Guid id)
+    [HttpDelete(Name = "DeletePromocodeAsync")]
+    public async Task<ActionResult<Promocode>> DeleteAsync(Guid id)
     {
         var result = await _context.DeleteAsync(id);
         if (result == null) return BadRequest(ModelState);
         return Ok(result);
     }
 
-    [HttpPut(Name = "UpdatePromocode")]
-    public async Task<ActionResult<Promocode>> Put(Promocode promocode)
+    [HttpPut(Name = "UpdatePromocodeAsync")]
+    public async Task<ActionResult<Promocode>> PutAsync(Promocode promocode)
     {
         var result = await _context.UpdateAsync(promocode);
         if (result == null) return BadRequest(ModelState);

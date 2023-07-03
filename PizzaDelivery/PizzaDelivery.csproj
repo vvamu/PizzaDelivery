@@ -8,9 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="7.0.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="7.0.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="7.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.1">
       <PrivateAssets>all</PrivateAssets>
@@ -21,6 +18,13 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PizzaDelivery.Application\PizzaDelivery.Application.csproj" />
+    <ProjectReference Include="..\PizzaDelivery.DomainRealize\PizzaDelivery.DomainRealize.csproj" />
+    <ProjectReference Include="..\PizzaDelivery.Domain\PizzaDelivery.Domain.csproj" />
+    <ProjectReference Include="..\PizzaDelivery.Persistence\PizzaDelivery.Persistence.csproj" />
   </ItemGroup>
 
 </Project>

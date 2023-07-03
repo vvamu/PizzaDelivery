@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using PizzaDelivery.Models;
+using PizzaDelivery.Domain.Models;
+using PizzaDelivery.DomainRealize.Interfaces;
 using PizzaDelivery.Services;
-using PizzaDelivery.Services.Interfaces;
 using PizzaDelivery.ViewModels;
 using System.Diagnostics;
 
@@ -12,16 +12,16 @@ public class HomeController : Controller
     private readonly ILogger<HomeController> _logger;
     private IRepository<Pizza> pizzaRepository;
 
-    public HomeController(ILogger<HomeController> logger, IRepository<Pizza> pizzaRepository)
+    public HomeController(ILogger<HomeController> logger)
     {
         _logger = logger;
-        this.pizzaRepository= pizzaRepository;
+        //this.pizzaRepository= pizzaRepository;
     }
 
     public IActionResult Index()
     {
-        var a = pizzaRepository.GetAllAsync().Result.ToList();
-        ViewBag.pizzas = a.ToList();
+        //var a = pizzaRepository.GetAllAsync().Result.ToList();
+        //ViewBag.pizzas = a.ToList();
         return View();
     }
 
@@ -34,15 +34,6 @@ public class HomeController : Controller
     public IActionResult Error()
     {
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-    }
-
-
-    [AcceptVerbs("Get", "Post")]
-    public IActionResult CheckEmail(string email)
-    {
-        if (email == "admin@mail.ru" || email == "aaa@gmail.com")
-            return Json(false);
-        return Json(true);
     }
 
     public IActionResult CreateNew()
