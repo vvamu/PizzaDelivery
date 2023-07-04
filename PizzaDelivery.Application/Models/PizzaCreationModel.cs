@@ -1,11 +1,15 @@
 ﻿using Microsoft.AspNetCore.Http;
-using PizzaDelivery.Models.Interfaces;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace PizzaDelivery.Domain.Models;
+namespace PizzaDelivery.Application.Models;
 
-public class Pizza : BaseModel
+public class PizzaCreationModel
 {
     [StringLength(100, MinimumLength = 2)]
     [RegularExpression("([a-zA-Z0-9 .&'-]+)", ErrorMessage = "The field Name should only include letters and number.")]
@@ -18,12 +22,10 @@ public class Pizza : BaseModel
     [Required]
     public string Ingridients { get; set; }
 
-
     [Range(0, 1000)]
     [DataType(DataType.Currency)]
     [Required]
     public decimal Price { get; set; }
-
 
     [StringLength(255, MinimumLength = 2)]
     [DataType(DataType.MultilineText)]
@@ -33,8 +35,7 @@ public class Pizza : BaseModel
     [DataType(DataType.Text)]
     public string? ImageUrl { get; set; }
 
-    [NotMapped] // Exclude from database mapping
+    [NotMapped]
     [DataType(DataType.Upload)]
     public IFormFile? ImageFile { get; set; }
-
 }

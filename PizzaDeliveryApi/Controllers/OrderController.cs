@@ -1,63 +1,57 @@
-﻿//using Microsoft.AspNetCore.Authorization;
-//using PizzaDelivery.Application.Interfaces;
-//using PizzaDelivery.Application.Models;
+﻿using Microsoft.AspNetCore.Authorization;
+using PizzaDelivery.Application.Interfaces;
+using PizzaDelivery.Application.Models;
 
-//namespace PizzaDeliveryApi.Controllers;
+namespace PizzaDeliveryApi.Controllers;
 
-//[ApiController]
-//[Route("[controller]")]
-//[Authorize]
-//public class OrderController : ControllerBase
-//{
+[ApiController]
+[Route("[controller]")]
+[Authorize]
+public class OrdersController : ControllerBase
+{
 
-//    private readonly ILogger<OrderController> _logger;
-//    private IOrderRepository _context;
-//    public OrderController(ILogger<OrderController> logger, IOrderRepository context)
-//    {
-//        _logger = logger;
-//        _context = context;
-//    }
+    private readonly ILogger<OrdersController> _logger;
+    private IOrderRepository _context;
+    public OrdersController(ILogger<OrdersController> logger, IOrderRepository context)
+    {
+        _logger = logger;
+        _context = context;
+    }
 
-//    [HttpGet("/User/",Name = "GetAllOrdersByUser")]
-//    [Authorize(Roles = "User")]
-//    public async Task<ActionResult<ICollection<Order>>> GetAllOrdersByUser()
-//    {
-//        var h = _context.GetAllAsync();
-//        return Ok(h);
-//    }
+    [HttpGet(Name = "GetAllOrdersByUser")]
+    [Authorize(Roles = "User")]
+    public async Task<ActionResult<ICollection<Order>>> GetAllOrdersByUser()
+    {
+        var h = _context.GetAllByUserAsync();
+        return Ok(h);
+    }
 
-//    [HttpGet("/All/", Name = "GetAllOrders")]
-//    [Authorize(Roles = "Admin")]
-//    public async Task<ActionResult<ICollection<Order>>> GetAll()
-//    {
-//        var h = _context.GetAllAsync();
-//        return Ok(h);
-//    }
+    [HttpGet("All/", Name = "GetAllOrders")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<ICollection<Order>>> GetAllOrders()
+    {
+        var h = _context.GetAllAsync();
+        return Ok(h);
+    }
 
-//    [HttpGet("/User/",Name ="{id}")]
-//    [Authorize(Roles = "User")]
-//    public async Task<ActionResult<Order>> GetOwn(Guid id)
-//    {
-//        var order = await _context.GetAsync(id);
-//        var userOrders = await _context.GetAllByUserAsync();
+    [HttpGet("{orderId}", Name = "GetOrder")]
+    [Authorize(Roles = "User,Admin")]
+    public async Task<ActionResult<Order>> GetOrder(Guid orderId)
+    {
+        var order = await _context.GetAsync(orderId);
+        return order == null ? BadRequest(ModelState) : Ok(order);
+    }
 
-
-//        return order == null ? BadRequest(order) : Ok(order);
-//    }
-
-//    [HttpPost("/User/",Name = "CreateOrder")]
-//    [Authorize(Roles = "User")]
-//    public async Task<ActionResult<Order>> Create(CreatedOrder order)
-//    {
-//        return Ok(await _context.CreateAsync(order));
-//    }
-
-
-//    //[HttpPut("/AddPromocode",Name = "UpdateOrder")]
-//    //public async Task<ActionResult<Order>> Put(Order order)
-//    //{
-//    //    var result = await _context.(order);
-//    //    if (result == null) return BadRequest(ModelState);
-//    //    return Ok(result);
-//    //}
-//}
+    [HttpPost(Name = "CreateOrder")]
+    [Authorize(Roles = "User")]
+    public async Task<ActionResult<Order>> Create(OrderCreationModel order)
+    {
+        return Ok(await _context.CreateAsync(order));
+    }
+    [HttpPut("AddPromocode",Name = "AddPromocodeToOrder")]
+    public async Task<ActionResult<Order>> AddPromocodeToOrder(string promocodeValue, Guid orderId)
+    {
+        var db_shoppingCart = await _context.AddPromocodeToOrder(promocodeValue,orderId);
+        return db_shoppingCart == null ? BadRequest(db_shoppingCart) : Ok(db_shoppingCart);
+    }
+}

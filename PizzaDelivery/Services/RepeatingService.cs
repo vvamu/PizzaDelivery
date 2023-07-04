@@ -1,6 +1,6 @@
 ﻿using PizzaDelivery.Domain.Models;
 using PizzaDelivery.Application.Interfaces;
-using PizzaDelivery.DomainRealize.Interfaces;
+
 
 namespace PizzaDelivery.Services;
 
@@ -29,7 +29,7 @@ public class RepeatingService : BackgroundService
     {
         using (var scope = _serviceScopeFactory.CreateScope())
         {
-            var promocodeRepository = scope.ServiceProvider.GetRequiredService<IRepository<Promocode>>();
+            var promocodeRepository = scope.ServiceProvider.GetRequiredService<IPromocodeRepository>();
 
             var expiredPromocode = (await promocodeRepository.GetAllAsync())
                 .FirstOrDefault(x => x.ExpireDate == DateTime.Now);

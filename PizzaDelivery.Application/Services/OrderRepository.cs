@@ -23,6 +23,15 @@ public class OrderRepository : IOrderRepository
         _userManager = userManager;
         _signInManager= signInManager;
     }
+    private ApplicationUser CurrentUser
+    {
+        get
+        {
+            var username = _signInManager.Context.User.Identity.Name;
+            var current_user = _userManager.Users.FirstOrDefault(x => x.UserName == username);
+            return current_user == null ? throw new Exception("Unauthorized") : current_user;
+        }
+    }
     public async Task<ICollection<Order>> GetAllAsync()
     {
         var NotDeliveredOrderStatus = Enum.GetName(typeof(OrderStatus), 1);
@@ -45,21 +54,20 @@ public class OrderRepository : IOrderRepository
     }
     public async Task<Order> GetAsync(Guid orderId)
     {
-        return await _context.Orders.FirstOrDefaultAsync(x => x.Id == orderId);
-    }
-    public async Task<Order> CreateAsync(CreatedOrder item, string userId)
-    {
-        if (string.IsNullOrEmpty(userId))
+        var order = await _context.Orders.Include(x=>x.User).FirstOrDefaultAsync(x => x.Id == orderId);
+        var userOrders = await GetAllByUserAsync();
+        if (_signInManager.Context.User.IsInRole("User") && userOrders.Any(o => o.Id == orderId))
         {
-            var username = _signInManager.Context.User.Identity.Name;
-            var current_user = await _userManager.FindByNameAsync(username);
-            userId = current_user.Id;
+            order = await _context.Orders.FirstOrDefaultAsync(x => x.Id == orderId);
+            return order;
         }
-        var db_user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId);
-        var db_shoppingCart = await _context.ShoppingCart.Include(x => x.User).FirstOrDefaultAsync(x => x.User.Id == userId);
+        throw new Exception("No Access");
+    }
+    public async Task<Order> CreateAsync(OrderCreationModel item)
+    {
+        var db_shoppingCart = await _context.ShoppingCart.Include(x => x.User).FirstOrDefaultAsync(x => x.User.Id == CurrentUser.Id);
         var totalPrice = db_shoppingCart.TotalPrice;
-
-        if (item == null || db_user == null) return null;
+        if (totalPrice == 0) throw new Exception("Add items to create order");
 
         var correctItem = new Order()
         {
@@ -68,14 +76,56 @@ public class OrderRepository : IOrderRepository
             TotalPrice = totalPrice,
             DeliveryType = item.DeliveryType,
             Comment = item.Comment,
-            User = db_user,
             OrderDate = item.OrderDate,
+            UserId = CurrentUser.Id,
+            OrderStatus = "NotDelivered"
         };
 
         await _context.Orders.AddAsync(correctItem);
         await _context.SaveChangesAsync();
+
+        var shoppingCart = await _context.ShoppingCart.Include(x=>x.User).FirstOrDefaultAsync(x => x.UserId == CurrentUser.Id);
+
+        if (shoppingCart != null)
+        {
+            var cartItems = await _context.ShoopingCartPizzas
+                .Where(x => x.ShoppingCartId == shoppingCart.Id)
+                .ToListAsync();
+
+            _context.ShoopingCartPizzas.RemoveRange(cartItems);
+            await _context.SaveChangesAsync();
+        }
+        await _context.SaveChangesAsync();
+
         return correctItem;
     }
 
+    public async Task<Order> AddPromocodeToOrder(string promocodeValue, Guid orderId = default)
+    {
+        var order = await GetAsync(orderId);
+        if (!(await GetNotDeliveredOrdersAsync()).Any(x => x.Id == order.Id)) throw new Exception("Order was delivered");
+        var db_promocode = await CheckCorrectPromocode(promocodeValue);
+        if (order.PromocodeId != default)
+        {
+            var existingPromoCode = await _context.Promocodes.FindAsync(order.PromocodeId);
+            var total2 = order.TotalPrice / (decimal)((double)existingPromoCode.SalePercent / (double)100);
+            order.TotalPrice = total2;
+        }
+        order.TotalPrice = (decimal)((double)order.TotalPrice * ((double)100 -(double)db_promocode.SalePercent) / (double)100);
+        order.PromocodeId = db_promocode.Id;
+        try
+        {
+            _context.Orders.Update(order);
+        }
+        catch { }
+        await _context.SaveChangesAsync();
+        order = await GetAsync(orderId);
+        return order;
+    }
+    public async Task<Promocode> CheckCorrectPromocode(string promocodeValue)
+    {
+        var promocode = await _context.Promocodes.FirstOrDefaultAsync(x => x.Value == promocodeValue);
+        return promocode == null ? throw new Exception("No such promocode in database") : promocode;
+    }
 
 }

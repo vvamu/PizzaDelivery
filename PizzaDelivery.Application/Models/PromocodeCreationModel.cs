@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace PizzaDelivery.Application.Models;
 
-public class PromocodeCreation
+public class PromocodeCreationModel
 {
     [StringLength(20, MinimumLength = 5)]
     [RegularExpression("([a-zA-Z0-9 .&'-]+)", ErrorMessage = "The field Name should only include letters and number.")]

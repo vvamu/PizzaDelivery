@@ -4,8 +4,6 @@ global using PizzaDelivery.Domain.Models;
 
 global using Microsoft.AspNetCore.Mvc;
 
-
-
 using Microsoft.EntityFrameworkCore;
 using PizzaDeliveryApi;
 using PizzaDeliveryApi.Controllers;
@@ -14,23 +12,9 @@ using Microsoft.AspNetCore.Identity;
 using PizzaDelivery.Domain.Models;
 
 
-
-
-
 using Serilog;
-using PizzaDeliveryApi.Middleware;
 using PizzaDelivery.Application.Services;
-using PizzaDelivery.DomainRealize.Interfaces;
-using PizzaDelivery.DomainRealize.Repository;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using PizzaDelivery.Application.HandleExceptions;
-using Microsoft.AspNetCore.Mvc.Filters;
-using System.Web.Http.ExceptionHandling;
-using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using System.Security.Claims;
-using PizzaDelivery.Domain.Models.User;
+
 
 var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
 var logger = loggerFactory.CreateLogger<WebApplication>();
@@ -57,12 +41,12 @@ builder.Services.AddDbContext<PizzaDelivery.Persistence.ApplicationDbContext>(
 #endregion
 
 #region Own Services
-builder.Services.AddTransient<IRepository<Pizza>, PizzaRepository>();
-builder.Services.AddTransient<IRepository<Promocode>, PromocodeRepository>();
+builder.Services.AddTransient<IPizzaRepository, PizzaRepository>();
+builder.Services.AddTransient<IPromocodeRepository, PromocodeRepository>();
 
 
-builder.Services.AddTransient<IOrderRepository, PizzaDelivery.Application.Services.OrderRepository>();
-builder.Services.AddTransient<IShoppingCartRepository, PizzaDelivery.Application.Services.ShoppingCartRepository>();
+builder.Services.AddTransient<IOrderRepository, OrderRepository>();
+builder.Services.AddTransient<IShoppingCartRepository, ShoppingCartRepository>();
 builder.Services.AddTransient<IAuthService, AuthService>();
 
 builder.Services.Configure<PasswordHasherOptions>(options =>

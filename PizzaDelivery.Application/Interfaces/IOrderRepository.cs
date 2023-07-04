@@ -9,5 +9,6 @@ public interface IOrderRepository
     public Task<ICollection<Order>> GetNotDeliveredOrdersAsync();
     public Task<ICollection<Order>> GetAllByUserAsync(string userId = null);
     public Task<Order> GetAsync(Guid orderId);
-    public Task<Order> CreateAsync (CreatedOrder item, string userId = null);
+    public Task<Order> CreateAsync (OrderCreationModel item);
+    public Task<Order> AddPromocodeToOrder(string promocodeValue, Guid orderId);
 }

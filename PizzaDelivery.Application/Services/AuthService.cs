@@ -100,8 +100,8 @@ public class AuthService : IAuthService
         await _context.SaveChangesAsync();
 
 
-        var role = GetRole(applicationUser);
-        if (string.IsNullOrEmpty(role.Result)) await _userManager.AddToRoleAsync(applicationUser, "User"); 
+        var adminEmail = _config["Admin:Email"];
+        if (user.Email != adminEmail) await _userManager.AddToRoleAsync(applicationUser, "User"); 
 
         await _context.SaveChangesAsync();
         
@@ -129,7 +129,6 @@ public class AuthService : IAuthService
             };
 
         var securityKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(_config.GetSection("Jwt:Key").Value));
-
         var signingCred = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha512Signature);
 
         var securityToken = new JwtSecurityToken(

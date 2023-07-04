@@ -13,7 +13,7 @@ public class ValidPaymentTypeAttribute : ValidationAttribute
 
             if (!Enum.IsDefined(typeof(PaymentType), orderStatus))
             {
-                return new ValidationResult("Invalid Payment Type");
+                return new ValidationResult("Invalid Payment Type. It should be in (ByCart,ByCash)");
             }
         }
 

@@ -23,9 +23,9 @@ public class AuthController : ControllerBase
         _authService = authService;
     }
 
-    [HttpGet("/Account", Name = "GetUserInfo")]
+    [HttpGet("Account", Name = "GetOwnUserInfoAsync")]
     [Authorize]
-    public async Task<ActionResult<ApplicationUser>> GetUserInfo()
+    public async Task<ActionResult<ApplicationUser>> GetOwnUserInfoAsync()
     {
         var current_user = await _authService.GetCurrentUserInfo();
         return current_user == null ? Ok("U should authorize") : Ok(current_user);
@@ -36,8 +36,7 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<ApplicationUser>> LogoutAsync()
     {
         var db_user = await _authService.LogoutAsync();
-        //return db_user == null ? BadRequest(ModelState) : Ok(db_user);
-        return Ok();
+        return db_user == null ? BadRequest(ModelState) : Ok(db_user);
     }
 
     [HttpPost("Register",Name = "RegisterAsync")]
@@ -61,17 +60,17 @@ public class AuthController : ControllerBase
 
     }
 
-    [HttpDelete("DeleteAll", Name = "DeleteAll")]
+    [HttpDelete("DeleteAll", Name = "DeleteAllAsync")]
     [AllowAnonymous]
-    public async Task<ActionResult<bool>> DeleteAll()
+    public async Task<ActionResult<bool>> DeleteAllAsync()
     {
         var result = await _authService.DeleteAll();
         return result == false ? BadRequest(ModelState) : Ok(result);
     }
 
-    [HttpDelete("DeleteAccount", Name = "DeleteAccount")]
+    [HttpDelete("DeleteAccount", Name = "DeleteOwnAccountAsync")]
     [Authorize]
-    public async Task<ActionResult<bool>> DeleteAccount()
+    public async Task<ActionResult<bool>> DeleteOwnAccountAsync()
     {
         var current_user = await _authService.DeleteAccount();
         return current_user == null ? BadRequest(ModelState) : Ok(current_user);

@@ -1,21 +1,22 @@
 ﻿using PizzaDelivery.Domain.Models;
 using PizzaDelivery.Application.Interfaces;
-using PizzaDelivery.DomainRealize.Interfaces;
+
 using Microsoft.AspNetCore.Authorization;
+using PizzaDelivery.Application.Models;
 
 namespace PizzaDeliveryApi.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("Pizzas")]
 [Authorize]
 public class PizzaController : ControllerBase
 {
 
     private readonly ILogger<PizzaController> _logger;
 
-    private IRepository<Pizza> _context;
+    private IPizzaRepository _context;
 
-    public PizzaController(ILogger<PizzaController> logger, IRepository<Pizza> context)
+    public PizzaController(ILogger<PizzaController> logger, IPizzaRepository context)
     {
         _logger = logger;
         _context = context;
@@ -38,7 +39,7 @@ public class PizzaController : ControllerBase
 
     [HttpPost(Name = "CreatePizza")]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<Pizza>> Create(Pizza pizza)
+    public async Task<ActionResult<Pizza>> Create(PizzaCreationModel pizza)
     {
         return Ok(await _context.CreateAsync(pizza));
     }
@@ -48,8 +49,7 @@ public class PizzaController : ControllerBase
     public async Task<ActionResult<Pizza>> Delete(Guid id)
     {
         var result = await _context.DeleteAsync(id);
-        if (result == null) return BadRequest(ModelState);
-        return Ok(result);
+        return result == null ? BadRequest(ModelState) : Ok(result);
     }
 
     [HttpPut(Name = "UpdatePizza")]

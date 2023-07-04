@@ -1,19 +1,21 @@
-﻿using PizzaDelivery.DomainRealize.Interfaces;
+﻿
 using Microsoft.AspNetCore.Authorization;
+using PizzaDelivery.Application.Models;
+using PizzaDelivery.Application.Interfaces;
 
 namespace OrderDeliveryApi.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-[Authorize(Roles = "Admin")]
+//[Authorize(Roles = "Admin")]
 public class PromocodeController : ControllerBase
 {
 
     private readonly ILogger<PromocodeController> _logger;
 
-    private IRepository<Promocode> _context;
+    private IPromocodeRepository _context;
 
-    public PromocodeController(ILogger<PromocodeController> logger, IRepository<Promocode> context)
+    public PromocodeController(ILogger<PromocodeController> logger, IPromocodeRepository context)
     {
         _logger = logger;
         _context = context;
@@ -35,7 +37,7 @@ public class PromocodeController : ControllerBase
     }
 
     [HttpPost(Name = "CreatePromocodeAsync")]
-    public async Task<ActionResult<Promocode>> CreateAsync(Promocode promocode)
+    public async Task<ActionResult<Promocode>> CreateAsync(PromocodeCreationModel promocode)
     {
         return Ok(await _context.CreateAsync(promocode));
     }

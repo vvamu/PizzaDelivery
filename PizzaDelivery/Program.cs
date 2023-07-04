@@ -10,9 +10,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Options;
 using PizzaDelivery.Domain.Models;
-using PizzaDelivery.DomainRealize.Interfaces;
+
 using PizzaDelivery.Application.Interfaces;
-using PizzaDelivery.DomainRealize.Repository;
+
 using PizzaDelivery.Application.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,8 +33,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(
         options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
     });
 
-builder.Services.AddTransient<IRepository<Pizza>, PizzaRepository>();
-builder.Services.AddTransient<IRepository<Promocode>, PromocodeRepository>();
+builder.Services.AddTransient<IPizzaRepository, PizzaRepository>();
+builder.Services.AddTransient<IPromocodeRepository, PromocodeRepository>();
 
 
 builder.Services.AddTransient<IOrderRepository, PizzaDelivery.Application.Services.OrderRepository>();

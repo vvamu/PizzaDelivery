@@ -19,11 +19,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="DocumentFormat.OpenXml" Version="2.20.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PizzaDelivery.DomainRealize\PizzaDelivery.DomainRealize.csproj" />
     <ProjectReference Include="..\PizzaDelivery.Domain\PizzaDelivery.Domain.csproj" />
     <ProjectReference Include="..\PizzaDelivery.Persistence\PizzaDelivery.Persistence.csproj" />
   </ItemGroup>

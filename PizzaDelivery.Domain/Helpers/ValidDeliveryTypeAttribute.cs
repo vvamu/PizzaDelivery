@@ -13,7 +13,7 @@ public class ValidDeliveryTypeAttribute : ValidationAttribute
 
             if (!Enum.IsDefined(typeof(DeliveryType), orderStatus))
             {
-                return new ValidationResult("Invalid Delivery Type");
+                return new ValidationResult("Invalid Delivery Type. It should be in (ByPlaceIn,ByPlaceOut)");
             }
         }
 
