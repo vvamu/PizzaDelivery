@@ -1,11 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PizzaDelivery.Application.Models;
 
@@ -31,9 +26,6 @@ public class PizzaCreationModel
     [DataType(DataType.MultilineText)]
     [Required]
     public string Desctiption { get; set; }
-
-    [DataType(DataType.Text)]
-    public string? ImageUrl { get; set; }
 
     [NotMapped]
     [DataType(DataType.Upload)]

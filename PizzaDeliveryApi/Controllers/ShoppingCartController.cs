@@ -12,8 +12,8 @@ namespace PizzaDeliveryApi.Controllers;
 public class ShoppingCartController : ControllerBase
 {
     private readonly ILogger<ShoppingCartController> _logger;
-    private IShoppingCartRepository _context;
-    public ShoppingCartController(ILogger<ShoppingCartController> logger, IShoppingCartRepository context)
+    private IShoppingCartService _context;
+    public ShoppingCartController(ILogger<ShoppingCartController> logger, IShoppingCartService context)
     {
         _logger = logger;
         _context = context;
@@ -46,8 +46,8 @@ public class ShoppingCartController : ControllerBase
         var db_shoppingCartItem = await _context.RemoveOneFromShoppingCartAsync(shoppingCartItemId);
         return db_shoppingCartItem == null ? BadRequest(db_shoppingCartItem) : Ok(db_shoppingCartItem);
     }
-    [HttpPut("Items/{shoppingCartItemId}",Name = "UpdateItemInShoppingCartAsync")]
-    public async Task<ActionResult<ShoppingCartItem>> UpdateItemInShoppingCartAsync(Guid pizzaId, int amount)
+    [HttpPut("Items/{pizzaId}",Name = "UpdateItemInShoppingCartAsync")]
+    public async Task<ActionResult<ShoppingCartItem>> UpdateItemInShoppingCartAsync(Guid pizzaId, [FromQuery] int amount)
     {
         var db_shoppingCartItem = await _context.UpdateItemInShoppingCartAsync(pizzaId, amount);
         return db_shoppingCartItem == null ? BadRequest(db_shoppingCartItem) : Ok(db_shoppingCartItem);

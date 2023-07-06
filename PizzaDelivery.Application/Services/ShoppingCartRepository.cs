@@ -10,7 +10,7 @@ using PizzaDelivery.Domain.Models.User;
 namespace PizzaDelivery.Application.Services;
 
 
-public class ShoppingCartRepository : IShoppingCartRepository
+public class ShoppingCartRepository : IShoppingCartService
 {
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;

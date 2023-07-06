@@ -23,5 +23,6 @@ public class Promocode : BaseModel
     [DisplayName("Expire Date")]
     [Required]
     public DateTime ExpireDate { get; set; }
+    public bool Expired { get; set; }
 
 }

@@ -6,6 +6,7 @@ using PizzaDelivery.Persistence;
 using PizzaDelivery.Application.Interfaces;
 using PizzaDelivery.Application.Models;
 using Microsoft.AspNetCore.Authorization;
+using PizzaDelivery.Application.Helpers;
 
 namespace PizzaDeliveryApi.Controllers;
 
@@ -16,17 +17,19 @@ public class AuthController : ControllerBase
 
     private readonly ILogger<AuthController> _logger;
     private readonly IAuthService _authService;
-
-    public AuthController(ILogger<AuthController> logger, ApplicationDbContext context, IAuthService authService)
+    private readonly IDefalutDbContent _defalutDbContent;
+    public AuthController(ILogger<AuthController> logger, ApplicationDbContext context, IAuthService authService, IDefalutDbContent defalutDbContent)
     {
         _logger = logger;
         _authService = authService;
+        _defalutDbContent = defalutDbContent;
     }
 
     [HttpGet("Account", Name = "GetOwnUserInfoAsync")]
     [Authorize]
     public async Task<ActionResult<ApplicationUser>> GetOwnUserInfoAsync()
     {
+        //await _defalutDbContent.GenerateAll();
         var current_user = await _authService.GetCurrentUserInfo();
         return current_user == null ? Ok("U should authorize") : Ok(current_user);
     }

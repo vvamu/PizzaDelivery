@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace PizzaDelivery.Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class addPromocodeIdwц : Migration
+    public partial class mimi : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -60,8 +60,9 @@ namespace PizzaDelivery.Persistence.Migrations
                     Name = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     Ingridients = table.Column<string>(type: "TEXT", maxLength: 255, nullable: false),
                     Price = table.Column<decimal>(type: "TEXT", nullable: false),
-                    Desctiption = table.Column<string>(type: "TEXT", maxLength: 255, nullable: false),
-                    ImagePath = table.Column<string>(type: "TEXT", nullable: true)
+                    Description = table.Column<string>(type: "TEXT", maxLength: 255, nullable: false),
+                    ImagePath = table.Column<string>(type: "TEXT", nullable: true),
+                    ImageMime = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -75,7 +76,8 @@ namespace PizzaDelivery.Persistence.Migrations
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     Value = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
                     SalePercent = table.Column<int>(type: "INTEGER", nullable: false),
-                    ExpireDate = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    ExpireDate = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    Expired = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -245,17 +247,11 @@ namespace PizzaDelivery.Persistence.Migrations
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     ShoppingCartId = table.Column<Guid>(type: "TEXT", nullable: false),
                     PizzaId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Amount = table.Column<int>(type: "INTEGER", nullable: false),
-                    OrderId = table.Column<Guid>(type: "TEXT", nullable: true)
+                    Amount = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ShoopingCartPizzas", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_ShoopingCartPizzas_Orders_OrderId",
-                        column: x => x.OrderId,
-                        principalTable: "Orders",
-                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_ShoopingCartPizzas_Pizzas_PizzaId",
                         column: x => x.PizzaId,
@@ -266,6 +262,32 @@ namespace PizzaDelivery.Persistence.Migrations
                         name: "FK_ShoopingCartPizzas_ShoppingCart_ShoppingCartId",
                         column: x => x.ShoppingCartId,
                         principalTable: "ShoppingCart",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "OrderItems",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    OrderId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    PizzaId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Amount = table.Column<int>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OrderItems", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_OrderItems_Orders_OrderId",
+                        column: x => x.OrderId,
+                        principalTable: "Orders",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_OrderItems_Pizzas_PizzaId",
+                        column: x => x.PizzaId,
+                        principalTable: "Pizzas",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -308,6 +330,16 @@ namespace PizzaDelivery.Persistence.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_OrderItems_OrderId",
+                table: "OrderItems",
+                column: "OrderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OrderItems_PizzaId",
+                table: "OrderItems",
+                column: "PizzaId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Orders_PromocodeId",
                 table: "Orders",
                 column: "PromocodeId");
@@ -316,11 +348,6 @@ namespace PizzaDelivery.Persistence.Migrations
                 name: "IX_Orders_UserId",
                 table: "Orders",
                 column: "UserId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ShoopingCartPizzas_OrderId",
-                table: "ShoopingCartPizzas",
-                column: "OrderId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ShoopingCartPizzas_PizzaId",
@@ -356,6 +383,9 @@ namespace PizzaDelivery.Persistence.Migrations
 
             migrationBuilder.DropTable(
                 name: "AspNetUserTokens");
+
+            migrationBuilder.DropTable(
+                name: "OrderItems");
 
             migrationBuilder.DropTable(
                 name: "ShoopingCartPizzas");

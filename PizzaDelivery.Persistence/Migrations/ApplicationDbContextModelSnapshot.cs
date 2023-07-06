@@ -194,18 +194,45 @@ namespace PizzaDelivery.Persistence.Migrations
                     b.ToTable("Orders");
                 });
 
+            modelBuilder.Entity("PizzaDelivery.Domain.Models.OrderItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Amount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("PizzaId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("PizzaId");
+
+                    b.ToTable("OrderItems");
+                });
+
             modelBuilder.Entity("PizzaDelivery.Domain.Models.Pizza", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Desctiption")
+                    b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("ImageUrl")
+                    b.Property<string>("ImageMime")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ImagePath")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Ingridients")
@@ -234,6 +261,9 @@ namespace PizzaDelivery.Persistence.Migrations
 
                     b.Property<DateTime>("ExpireDate")
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("Expired")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("SalePercent")
                         .HasColumnType("INTEGER");
@@ -278,9 +308,6 @@ namespace PizzaDelivery.Persistence.Migrations
                     b.Property<int>("Amount")
                         .HasColumnType("INTEGER");
 
-                    b.Property<Guid?>("OrderId")
-                        .HasColumnType("TEXT");
-
                     b.Property<Guid>("PizzaId")
                         .HasColumnType("TEXT");
 
@@ -288,8 +315,6 @@ namespace PizzaDelivery.Persistence.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("OrderId");
 
                     b.HasIndex("PizzaId");
 
@@ -437,6 +462,25 @@ namespace PizzaDelivery.Persistence.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("PizzaDelivery.Domain.Models.OrderItem", b =>
+                {
+                    b.HasOne("PizzaDelivery.Domain.Models.Order", "Order")
+                        .WithMany("ShoppingCartItems")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PizzaDelivery.Domain.Models.Pizza", "Pizza")
+                        .WithMany()
+                        .HasForeignKey("PizzaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+
+                    b.Navigation("Pizza");
+                });
+
             modelBuilder.Entity("PizzaDelivery.Domain.Models.ShoppingCart", b =>
                 {
                     b.HasOne("PizzaDelivery.Domain.Models.User.ApplicationUser", "User")
@@ -450,10 +494,6 @@ namespace PizzaDelivery.Persistence.Migrations
 
             modelBuilder.Entity("PizzaDelivery.Domain.Models.ShoppingCartItem", b =>
                 {
-                    b.HasOne("PizzaDelivery.Domain.Models.Order", null)
-                        .WithMany("ShoppingCartItems")
-                        .HasForeignKey("OrderId");
-
                     b.HasOne("PizzaDelivery.Domain.Models.Pizza", "Pizza")
                         .WithMany()
                         .HasForeignKey("PizzaId")

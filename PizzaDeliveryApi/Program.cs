@@ -1,34 +1,30 @@
-global using PizzaDelivery.Models;
-global using PizzaDelivery.Services;
 global using PizzaDelivery.Domain.Models;
-
 global using Microsoft.AspNetCore.Mvc;
 
 using Microsoft.EntityFrameworkCore;
-using PizzaDeliveryApi;
-using PizzaDeliveryApi.Controllers;
 using PizzaDelivery.Application.Interfaces;
 using Microsoft.AspNetCore.Identity;
-using PizzaDelivery.Domain.Models;
-
-
 using Serilog;
 using PizzaDelivery.Application.Services;
+using PizzaDelivery.Application.Options;
+using PizzaDelivery.Application.Helpers;
+using PizzaDeliveryApi.Services;
+using MongoDB.Driver;
 
-
-var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
-var logger = loggerFactory.CreateLogger<WebApplication>();
+//var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+//var logger = loggerFactory.CreateLogger<WebApplication>();
 
 var builder = WebApplication.CreateBuilder(args);
+var services = builder.Services;
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-
-//var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
-//var logger = loggerFactory.CreateLogger<WebApplication>();
-
+builder.Services.AddControllersWithViews().
+    AddNewtonsoftJson(options =>
+    options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
+);
 
 #region DBConfig
 var connectionString = builder.Configuration.GetConnectionString("SqliteConnection");
@@ -41,13 +37,17 @@ builder.Services.AddDbContext<PizzaDelivery.Persistence.ApplicationDbContext>(
 #endregion
 
 #region Own Services
-builder.Services.AddTransient<IPizzaRepository, PizzaRepository>();
-builder.Services.AddTransient<IPromocodeRepository, PromocodeRepository>();
+services.AddSingleton<IWebHostEnvironment>(provider => (IWebHostEnvironment)provider.GetRequiredService<Microsoft.AspNetCore.Hosting.IHostingEnvironment>());
+
+builder.Services.AddTransient<IPizzaService, PizzaService>();
+builder.Services.AddTransient<IPromocodeService, PromocodeService>();
 
 
-builder.Services.AddTransient<IOrderRepository, OrderRepository>();
-builder.Services.AddTransient<IShoppingCartRepository, ShoppingCartRepository>();
+builder.Services.AddTransient<IOrderService, OrderService>();
+builder.Services.AddTransient<IShoppingCartService, ShoppingCartRepository>();
 builder.Services.AddTransient<IAuthService, AuthService>();
+
+builder.Services.AddTransient<IDefalutDbContent,DefaultDbContent>();
 
 builder.Services.Configure<PasswordHasherOptions>(options =>
     options.CompatibilityMode = PasswordHasherCompatibilityMode.IdentityV2
@@ -99,25 +99,43 @@ builder.Services.AddAuthorization(options =>
 #endregion
 
 
-
+#region Options pattern 
 IConfiguration configuration = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
     .AddJsonFile("appsettings.json")
-    .Build();
+.Build();
 
-builder.Services.AddSingleton<IConfiguration>(configuration);
-
-
-builder.Services.AddControllersWithViews().
-    AddNewtonsoftJson(options =>
-    options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
-);
+builder.Services.AddSingleton(configuration);
+services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.OptionName));
+services.Configure<AdminOptions>(configuration.GetSection(AdminOptions.OptionName));
+services.Configure<ConnectionStringsOptions>(configuration.GetSection(ConnectionStringsOptions.OptionName));
+#endregion
 
 
-builder.Host.UseSerilog((context, configuration) =>
-    configuration
-    .WriteTo.Console()
-    .MinimumLevel.Information());
+var log = new LoggerConfiguration()
+    .WriteTo.MongoDBBson("mongodb://localhost:27017/serilog")
+    .CreateLogger();
+
+
+try
+{
+
+    // Log a test message
+    log.Information("Test log message");
+
+    // Flush the log events to ensure they are written to MongoDB
+    log.Dispose();
+}
+catch (Exception ex)
+{
+    // Handle connection error
+    Console.WriteLine($"Failed to connect to MongoDB: {ex.Message}");
+}
+
+//builder.Host.UseSerilog((context, configuration) =>
+//    configuration
+//    .MinimumLevel.Information()
+//    .ReadFrom.Configuration(context.Configuration)) ;
 
 var app = builder.Build();
 
@@ -127,15 +145,11 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-    //app.UseExceptionHandler("/error-local-development");
-}
-else
-{
-    //app.UseExceptionHandler("/error");
 }
 
 
-//app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+app.UseMiddleware<PizzaDelivery.Application.HandleExceptions.ExceptionHandlingMiddleware>();
 app.UseRouting();
 
 app.UseHttpsRedirection();
@@ -144,7 +158,7 @@ app.UseDeveloperExceptionPage();
 
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseSerilogRequestLogging();
+//app.UseSerilogRequestLogging();
 
 app.UseEndpoints(endpoints =>
 {
@@ -152,6 +166,11 @@ app.UseEndpoints(endpoints =>
 });
 app.UseStatusCodePages();
 
+
+var repitingService = new RepeatingService(log, app.Services.GetService<IServiceScopeFactory>());
+repitingService.StartAsync(CancellationToken.None);
+
+#region Roles
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
@@ -171,5 +190,7 @@ using (var scope = app.Services.CreateScope())
     //var admin = userManager.UserManager.FindByEmailAsync("admin@service.com") ?? userManager;
 
 }
+#endregion
+
 
 app.Run();

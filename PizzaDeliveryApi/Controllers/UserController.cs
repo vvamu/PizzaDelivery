@@ -6,6 +6,7 @@ using PizzaDelivery.Persistence;
 using PizzaDelivery.Application.Interfaces;
 using PizzaDelivery.Application.Models;
 using Microsoft.AspNetCore.Authorization;
+using FuzzySharp;
 
 namespace PizzaDeliveryApi.Controllers;
 
@@ -28,9 +29,17 @@ public class UserController : ControllerBase
 
     [HttpGet(Name = "GetAllUsersAsync")]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<ApplicationUser>> GetAllUsersAsync()
+    public async Task<ActionResult<ApplicationUser>> GetAllUsersAsync(int page = 1, int pageSize = 5)
     {
-        return Ok(await _authService.GetAllAsync());
+        if (page < 1 || pageSize < 1) throw new ArgumentOutOfRangeException();
+        var items = await _authService.GetAllAsync();
+        var totalCount = items.Count;
+        var totalPages = (int)Math.Ceiling((decimal)totalCount / pageSize);
+        if (page > totalPages) throw new Exception("With this size of page the last page number - " + totalPages);
+        var itemPerPage = items.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+        return Ok(itemPerPage);
+
     }
 
     [HttpGet("{userId}", Name = "GetUserInfoAsync")]
@@ -50,4 +59,16 @@ public class UserController : ControllerBase
         return db_user == null ? BadRequest(ModelState) : Ok(db_user);
     }
 
+    [HttpGet("{searchName}", Name = "SearchUsers")]
+    public async Task<ActionResult<ICollection<string>>> SearchUsers(string searchName)
+    {
+        // Retrieve all users from the database
+        var allUsersNames = await _context.Users.Select(x=>x.UserName).ToListAsync();
+
+        // Use FuzzySharp to find fuzzy matches
+        var searchResults = Process.ExtractTop(searchName, allUsersNames, limit: 5);
+
+        // Return the search results
+        return Ok(searchResults.Select(x=>x.Value).ToList());
+    }
 }

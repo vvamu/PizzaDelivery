@@ -1,5 +1,4 @@
 global using PizzaDelivery.Models;
-global using PizzaDelivery.Services;
 global using PizzaDelivery.Domain.Models;
 global using PizzaDelivery.Persistence;
 global using PizzaDelivery.Domain.Models.User;
@@ -33,12 +32,12 @@ builder.Services.AddDbContext<ApplicationDbContext>(
         options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
     });
 
-builder.Services.AddTransient<IPizzaRepository, PizzaRepository>();
-builder.Services.AddTransient<IPromocodeRepository, PromocodeRepository>();
+builder.Services.AddTransient<IPizzaService, PizzaService>();
+builder.Services.AddTransient<IPromocodeService, PromocodeService>();
 
 
-builder.Services.AddTransient<IOrderRepository, PizzaDelivery.Application.Services.OrderRepository>();
-builder.Services.AddTransient<IShoppingCartRepository, PizzaDelivery.Application.Services.ShoppingCartRepository>();
+builder.Services.AddTransient<IOrderService, PizzaDelivery.Application.Services.OrderService>();
+builder.Services.AddTransient<IShoppingCartService, PizzaDelivery.Application.Services.ShoppingCartRepository>();
 builder.Services.AddTransient<IAuthService, AuthService>();
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
@@ -59,9 +58,9 @@ builder.Logging.AddConsole();
 
 var app = builder.Build();
 
-var logger = app.Services.GetService<ILogger<RepeatingService>>();
-var service = new RepeatingService(logger,app.Services.GetService<IServiceScopeFactory>());
-service.StartAsync(CancellationToken.None);
+//var logger = app.Services.GetService<ILogger<RepeatingService>>();
+//var service = new RepeatingService(logger,app.Services.GetService<IServiceScopeFactory>());
+//service.StartAsync(CancellationToken.None);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

@@ -2,7 +2,7 @@
 
 namespace PizzaDelivery.Application.Interfaces;
 
-public interface IPromocodeRepository
+public interface IPromocodeService
 {
     Task<ICollection<Promocode>> GetAllAsync(); // получение всех объектов
     Task<Promocode?> GetAsync(Guid id); // получение одного объекта по id

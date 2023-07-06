@@ -7,13 +7,16 @@ using PizzaDelivery.Domain.Models.User;
 using System.Globalization;
 using System.Resources;
 using static System.Runtime.InteropServices.JavaScript.JSType;
-using PizzaDelivery.Application.Helpers;
 using Microsoft.Extensions.Configuration;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Http;
 using PizzaDelivery.Domain.Models;
+using Microsoft.Extensions.Options;
+using PizzaDelivery.Application.Options;
+using PizzaDelivery.Application.Helpers;
+
 
 namespace PizzaDelivery.Application.Services;
 
@@ -22,16 +25,17 @@ public class AuthService : IAuthService
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly ApplicationDbContext _context;
-    private readonly IConfiguration _config;
-
+    private readonly JwtOptions _jwtOptions;
+    private readonly AdminOptions _adminOptions;
 
     public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager,
-        ApplicationDbContext context, IConfiguration config)
+        ApplicationDbContext context, IOptions<JwtOptions> jwtOptions, IOptions<AdminOptions>  adminOptions)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _context = context;
-        _config = config;
+        _jwtOptions = jwtOptions.Value;
+        _adminOptions = adminOptions.Value;
     }
 
     public async Task<ICollection<ApplicationUser>> GetAllAsync()
@@ -100,7 +104,7 @@ public class AuthService : IAuthService
         await _context.SaveChangesAsync();
 
 
-        var adminEmail = _config["Admin:Email"];
+        var adminEmail = _adminOptions.Email;
         if (user.Email != adminEmail) await _userManager.AddToRoleAsync(applicationUser, "User"); 
 
         await _context.SaveChangesAsync();
@@ -128,14 +132,14 @@ public class AuthService : IAuthService
                 new Claim(ClaimTypes.Role,"Admin"),
             };
 
-        var securityKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(_config.GetSection("Jwt:Key").Value));
+        var securityKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(_jwtOptions.Key));
         var signingCred = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha512Signature);
 
         var securityToken = new JwtSecurityToken(
             claims: claims,
             expires: DateTime.Now.AddMinutes(60),
-            issuer: _config.GetSection("Jwt:Issuer").Value,
-            audience: _config.GetSection("Jwt:Audience").Value,
+            issuer: _jwtOptions.Issuer,
+            audience: _jwtOptions.Audience,
             signingCredentials: signingCred);
 
         string tokenString = new JwtSecurityTokenHandler().WriteToken(securityToken);
@@ -144,9 +148,9 @@ public class AuthService : IAuthService
 
     public async Task CreateAdmin()
     {
-        var adminEmail = _config.GetSection("Admin:Email").Value;
-        var adminUserName = _config["Admin:UserName"];
-        var adminPassword = _config.GetValue<string>("Admin:Password");
+        var adminEmail = _adminOptions.Email;
+        var adminUserName = _adminOptions.UserName;
+        var adminPassword = _adminOptions.Password;
 
         var result = await _userManager.FindByEmailAsync(adminEmail);
         if (result != null) return;

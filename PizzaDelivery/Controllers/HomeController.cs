@@ -10,7 +10,7 @@ namespace PizzaDelivery.Controllers;
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
-    private IPizzaRepository pizzaRepository;
+    private IPizzaService pizzaRepository;
 
     public HomeController(ILogger<HomeController> logger)
     {

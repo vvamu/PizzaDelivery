@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using PizzaDelivery.Models.Interfaces;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -28,13 +29,17 @@ public class Pizza : BaseModel
     [StringLength(255, MinimumLength = 2)]
     [DataType(DataType.MultilineText)]
     [Required]
-    public string Desctiption { get; set; }
+    public string Description { get; set; }
 
     [DataType(DataType.Text)]
-    public string? ImageUrl { get; set; }
+    public string? ImagePath { get; set; }
 
-    [NotMapped] // Exclude from database mapping
+    [DataType(DataType.Text)]
+    public string? ImageMime { get; set; }
+
+    [NotMapped]
     [DataType(DataType.Upload)]
     public IFormFile? ImageFile { get; set; }
+    //public bool Deleted { get; set; }
 
 }

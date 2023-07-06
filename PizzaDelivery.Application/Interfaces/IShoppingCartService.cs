@@ -2,7 +2,7 @@
 
 namespace PizzaDelivery.Application.Interfaces;
 
-public interface IShoppingCartRepository
+public interface IShoppingCartService
 {
     public Task<ShoppingCart> GetShoppingCartAsync();
     public Task<ICollection<ShoppingCartItem>> GetAllShoppingCartItemsAsync();

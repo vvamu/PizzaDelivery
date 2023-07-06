@@ -14,6 +14,7 @@ public class ApplicationDbContext : IdentityDbContext<Domain.Models.User.Applica
     public DbSet<Order> Orders { get; set; }
     public DbSet<Promocode> Promocodes { get; set; }
     public DbSet<ShoppingCartItem> ShoopingCartPizzas { get; set; }
+    public DbSet<OrderItem> OrderItems { get; set; }
     public DbSet<ShoppingCart> ShoppingCart { get; set; }
 
 

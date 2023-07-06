@@ -9,14 +9,14 @@ using PizzaDelivery.Domain.Models.User;
 
 namespace PizzaDelivery.Application.Services;
 
-public class OrderRepository : IOrderRepository
+public class OrderService :  IOrderService
 {
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
 
 
-    public OrderRepository(ApplicationDbContext context, UserManager<ApplicationUser> userManager,
+    public OrderService(ApplicationDbContext context, UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager)
     {
         _context = context;
@@ -86,14 +86,26 @@ public class OrderRepository : IOrderRepository
 
         var shoppingCart = await _context.ShoppingCart.Include(x=>x.User).FirstOrDefaultAsync(x => x.UserId == CurrentUser.Id);
 
+
         if (shoppingCart != null)
         {
             var cartItems = await _context.ShoopingCartPizzas
                 .Where(x => x.ShoppingCartId == shoppingCart.Id)
                 .ToListAsync();
+            List<OrderItem> orderItems= new List<OrderItem>();
+            foreach (var cartItem in cartItems)
+            {
+                var orderItem = new OrderItem()
+                {
+                    PizzaId = cartItem.PizzaId,
+                    Amount = cartItem.Amount,
+                    OrderId = correctItem.Id
+                };
 
+                orderItems.Add(orderItem);
+            }
+            await _context.OrderItems.AddRangeAsync(orderItems); 
             _context.ShoopingCartPizzas.RemoveRange(cartItems);
-            await _context.SaveChangesAsync();
         }
         await _context.SaveChangesAsync();
 
@@ -126,6 +138,11 @@ public class OrderRepository : IOrderRepository
     {
         var promocode = await _context.Promocodes.FirstOrDefaultAsync(x => x.Value == promocodeValue);
         return promocode == null ? throw new Exception("No such promocode in database") : promocode;
+    }
+
+    public async Task<ICollection<OrderItem>> GetAllOrderItems()
+    {
+        return await _context.OrderItems.Include(x=>x.Order).Include(x=>x.Pizza).ToListAsync();
     }
 
 }

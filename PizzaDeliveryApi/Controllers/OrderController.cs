@@ -11,8 +11,8 @@ public class OrdersController : ControllerBase
 {
 
     private readonly ILogger<OrdersController> _logger;
-    private IOrderRepository _context;
-    public OrdersController(ILogger<OrdersController> logger, IOrderRepository context)
+    private IOrderService _context;
+    public OrdersController(ILogger<OrdersController> logger, IOrderService context)
     {
         _logger = logger;
         _context = context;
@@ -20,18 +20,30 @@ public class OrdersController : ControllerBase
 
     [HttpGet(Name = "GetAllOrdersByUser")]
     [Authorize(Roles = "User")]
-    public async Task<ActionResult<ICollection<Order>>> GetAllOrdersByUser()
+    public async Task<ActionResult<ICollection<Order>>> GetAllOrdersByUser(int page = 1, int pageSize = 5)
     {
-        var h = _context.GetAllByUserAsync();
-        return Ok(h);
+        if (page < 1 || pageSize < 1) throw new ArgumentOutOfRangeException();
+        var items = await _context.GetAllByUserAsync();
+        var totalCount = items.Count;
+        var totalPages = (int)Math.Ceiling((decimal)totalCount / pageSize);
+        if (page > totalPages) throw new Exception("With this size of page the last page number - " + totalPages);
+        var itemPerPage = items.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+        return Ok(itemPerPage);
     }
 
     [HttpGet("All/", Name = "GetAllOrders")]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<ICollection<Order>>> GetAllOrders()
+    public async Task<ActionResult<ICollection<Order>>> GetAllOrders(int page = 1, int pageSize = 5)
     {
-        var h = _context.GetAllAsync();
-        return Ok(h);
+        if (page < 1 || pageSize < 1) throw new ArgumentOutOfRangeException();
+        var items = await _context.GetAllAsync();
+        var totalCount = items.Count;
+        var totalPages = (int)Math.Ceiling((decimal)totalCount / pageSize);
+        if (page > totalPages) throw new Exception("With this size of page the last page number - " + totalPages);
+        var itemPerPage = items.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+        return Ok(itemPerPage);
     }
 
     [HttpGet("{orderId}", Name = "GetOrder")]

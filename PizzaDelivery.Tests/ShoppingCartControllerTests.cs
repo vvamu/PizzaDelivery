@@ -10,11 +10,11 @@ namespace PizzaDelivery.Tests;
 public class ShoppingCartControllerTests
 {
     private readonly ShoppingCartController _controller;
-    private readonly Mock<IShoppingCartRepository> _mockRepository;
+    private readonly Mock<IShoppingCartService> _mockRepository;
 
     public ShoppingCartControllerTests()
     {
-        _mockRepository = new Mock<IShoppingCartRepository>();
+        _mockRepository = new Mock<IShoppingCartService>();
         _controller = new ShoppingCartController(Mock.Of<ILogger<ShoppingCartController>>(), _mockRepository.Object);
     }
 

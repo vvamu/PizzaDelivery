@@ -13,19 +13,25 @@ public class PromocodeController : ControllerBase
 
     private readonly ILogger<PromocodeController> _logger;
 
-    private IPromocodeRepository _context;
+    private IPromocodeService _context;
 
-    public PromocodeController(ILogger<PromocodeController> logger, IPromocodeRepository context)
+    public PromocodeController(ILogger<PromocodeController> logger, IPromocodeService context)
     {
         _logger = logger;
         _context = context;
     }
 
     [HttpGet(Name = "GetAllPromocodesAsync")]
-    public async Task<ActionResult<ICollection<Promocode>>> GetAllAsync()
+    public async Task<ActionResult<ICollection<Promocode>>> GetAllAsync(int page = 1, int pageSize = 5)
     {
-        var h = _context.GetAllAsync();
-        return Ok(h);
+        if (page < 1 || pageSize < 1) throw new ArgumentOutOfRangeException();
+        var items = await _context.GetAllAsync();
+        var totalCount = items.Count;
+        var totalPages = (int)Math.Ceiling((decimal)totalCount / pageSize);
+        if (page > totalPages) throw new Exception("With this size of page the last page number - " + totalPages);
+        var itemPerPage = items.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+        return Ok(itemPerPage);
     }
 
     [HttpGet("{id}", Name = "GetOneAsync")]

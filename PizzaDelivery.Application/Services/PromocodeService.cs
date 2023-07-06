@@ -5,11 +5,11 @@ using PizzaDelivery.Domain.Models;
 namespace PizzaDelivery.Application.Services;
 
 
-public class PromocodeRepository : IPromocodeRepository
+public class PromocodeService : IPromocodeService
 {
     private ApplicationDbContext _context;
 
-    public PromocodeRepository(ApplicationDbContext context)
+    public PromocodeService(ApplicationDbContext context)
     {
         _context = context;
     }

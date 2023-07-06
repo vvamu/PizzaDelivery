@@ -6,7 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace PizzaDelivery.Application.HandleExceptions;
+namespace PizzaDelivery.Application.Helpers;
 public class Error
 {
     public Guid ErrorId { get; set; } = Guid.NewGuid();

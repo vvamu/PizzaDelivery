@@ -12,7 +12,7 @@ public class Order : BaseModel
 {
     public Order()
     {
-        ShoppingCartItems = new List<ShoppingCartItem>();
+        ShoppingCartItems = new List<OrderItem>();
         OrderDate = DateTime.Now;
     }
 
@@ -51,5 +51,5 @@ public class Order : BaseModel
     public Guid? PromocodeId { get; set; }
     public Promocode? Promocode { get; set; }
 
-    public ICollection<ShoppingCartItem> ShoppingCartItems { get; set; }
+    public ICollection<OrderItem> ShoppingCartItems { get; set; }
 }

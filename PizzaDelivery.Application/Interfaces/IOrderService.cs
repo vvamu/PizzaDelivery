@@ -2,7 +2,7 @@
 
 namespace PizzaDelivery.Application.Interfaces;
 
-public interface IOrderRepository
+public interface IOrderService
 {
 
     public Task<ICollection<Order>> GetAllAsync();
@@ -11,4 +11,6 @@ public interface IOrderRepository
     public Task<Order> GetAsync(Guid orderId);
     public Task<Order> CreateAsync (OrderCreationModel item);
     public Task<Order> AddPromocodeToOrder(string promocodeValue, Guid orderId);
+
+    public Task<ICollection<OrderItem>> GetAllOrderItems();
 }
