@@ -1,15 +1,18 @@
 ﻿using PizzaDelivery.Domain.Models;
-using PizzaDelivery.Application.Interfaces;
 
 using Microsoft.AspNetCore.Authorization;
 using PizzaDelivery.Application.Models;
 using System.Net;
+using Newtonsoft.Json;
+using PizzaDelivery.Application.Helpers;
+using DocumentFormat.OpenXml.Spreadsheet;
+using PizzaDelivery.Application.Services.Interfaces;
+using Serilog;
 
 namespace PizzaDeliveryApi.Controllers;
 
 [ApiController]
 [Route("Pizzas")]
-[Authorize]
 public class PizzaController : ControllerBase
 {
 
@@ -23,17 +26,25 @@ public class PizzaController : ControllerBase
         _context = context;
     }
 
-    [HttpGet(Name = "GetAllPizzas")]
-    public async Task<ActionResult<ICollection<Pizza>>> GetAll(int page = 1, int pageSize = 5)
+    [HttpGet(Name = "GetPizzas")]
+    public IActionResult GetPizzas([FromQuery] QueryStringParameters parameters)
     {
-        if (page < 1 || pageSize < 1) throw new ArgumentOutOfRangeException();
-        var items = await _context.GetAllAsync();
-        var totalCount = items.Count;
-        var totalPages = (int)Math.Ceiling((decimal)totalCount/ pageSize);
-        if(page > totalPages) throw new Exception("With this size of page the last page number - " + totalPages);
-        var itemPerPage = items.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-        
-        return Ok(itemPerPage);
+        Log.Warning("Auth");
+
+        var items = _context.GetAllAsync(parameters);
+
+        var metadata = new
+        {
+            items.TotalCount,
+            items.PageSize,
+            items.CurrentPage,
+            items.TotalPages,
+            items.HasNext,
+            items.HasPrevious
+        };
+
+        Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(metadata));
+        return Ok(items);
     }
 
     [HttpGet("{id}")]
@@ -58,37 +69,6 @@ public class PizzaController : ControllerBase
     {
         return Ok(await _context.CreateAsync(pizza));
     }
-
-
-    //public HttpResponseMessage GetImageWithModel(int id)
-    //{
-    //    // Retrieve your model data
-    //    YourModel model = YourDataFetchingLogic(id);
-
-    //    // Check if the model exists
-    //    if (model == null)
-    //    {
-    //        // Return a Not Found response if the model doesn't exist
-    //        return Request.CreateResponse(HttpStatusCode.NotFound);
-    //    }
-
-    //    // Read the image file
-    //    byte[] imageBytes = File.ReadAllBytes(model.ImagePath);
-
-    //    // Create a response message
-    //    HttpResponseMessage response = new HttpResponseMessage(HttpStatusCode.OK);
-
-    //    // Set the content of the response
-    //    response.Content = new ByteArrayContent(imageBytes);
-
-    //    // Set the content type header
-    //    response.Content.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg"); // Replace with your desired content type
-
-    //    // Attach your model data to the response
-    //    response.Content.Headers.Add("X-ModelData", YourModelDataSerializationLogic(model)); // Replace with your serialization logic
-
-    //    return response;
-    //}
 
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin")]

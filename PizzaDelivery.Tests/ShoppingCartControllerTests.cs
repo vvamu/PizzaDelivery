@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
-using PizzaDelivery.Application.Interfaces;
+using PizzaDelivery.Application.Services.Interfaces;
 using PizzaDelivery.Domain.Models;
 using PizzaDeliveryApi.Controllers;
 

@@ -9,10 +9,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Options;
 using PizzaDelivery.Domain.Models;
-
-using PizzaDelivery.Application.Interfaces;
-
-using PizzaDelivery.Application.Services;
+using PizzaDelivery.Application.Services.Implementation;
+using PizzaDelivery.Application.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,8 +34,8 @@ builder.Services.AddTransient<IPizzaService, PizzaService>();
 builder.Services.AddTransient<IPromocodeService, PromocodeService>();
 
 
-builder.Services.AddTransient<IOrderService, PizzaDelivery.Application.Services.OrderService>();
-builder.Services.AddTransient<IShoppingCartService, PizzaDelivery.Application.Services.ShoppingCartRepository>();
+builder.Services.AddTransient<IOrderService, OrderService>();
+builder.Services.AddTransient<IShoppingCartService, ShoppingCartRepository>();
 builder.Services.AddTransient<IAuthService, AuthService>();
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();

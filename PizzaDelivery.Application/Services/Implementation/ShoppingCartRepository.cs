@@ -2,12 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 
 using PizzaDelivery.Domain.Models;
-using PizzaDelivery.Application.Interfaces;
 using System.Drawing;
 using PizzaDelivery.Domain.Models.User;
+using PizzaDelivery.Application.Services.Interfaces;
 
-
-namespace PizzaDelivery.Application.Services;
+namespace PizzaDelivery.Application.Services.Implementation;
 
 
 public class ShoppingCartRepository : IShoppingCartService
@@ -22,14 +21,14 @@ public class ShoppingCartRepository : IShoppingCartService
         get
         {
             var username = _signInManager.Context.User.Identity.Name;
-            var current_user =  _userManager.Users.FirstOrDefault(x=>x.UserName == username);
+            var current_user = _userManager.Users.FirstOrDefault(x => x.UserName == username);
             return current_user == null ? throw new Exception("Unauthorized") : current_user;
         }
     }
 
     public ShoppingCartRepository(ApplicationDbContext context,
         //PizzaDelivery.DomainRealize.Interfaces.IRepository<ShoppingCart> shoppingCartRep,
-        UserManager<ApplicationUser> userManager,SignInManager<ApplicationUser> signInManager)
+        UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
     {
         _context = context;
         //_shoppingCartRepository = shoppingCartRep;
@@ -39,8 +38,8 @@ public class ShoppingCartRepository : IShoppingCartService
     public async Task<ShoppingCart> GetShoppingCartAsync()
     {
         var current_user = CurrentUser;
-        var shoppingCartId = _context.ShoppingCart.Include(x=>x.User).Where(x=>x.User.Id == current_user.Id).FirstOrDefault().Id;
-        
+        var shoppingCartId = _context.ShoppingCart.Include(x => x.User).Where(x => x.User.Id == current_user.Id).FirstOrDefault().Id;
+
         var shoppingCarts = await _context.ShoppingCart.Include(x => x.ShoppingCartItems).Where(x => x.Id == shoppingCartId).ToListAsync();
         if (shoppingCarts.Count > 1) throw new Exception("More than 1 shopping cart");
         var shoppingCart = shoppingCarts.FirstOrDefault();
@@ -80,7 +79,7 @@ public class ShoppingCartRepository : IShoppingCartService
         var userShoppingCart = await GetShoppingCartAsync();
         var shoppingCartItems = await GetAllShoppingCartItemsAsync();
         var existingPizzaInCart = shoppingCartItems.FirstOrDefault(x => x.Pizza.Id == pizzaId);
-        
+
         if (existingPizzaInCart == null)
         {
             var db_pizza = await GetPizzaById(pizzaId);
@@ -92,13 +91,13 @@ public class ShoppingCartRepository : IShoppingCartService
             };
             await _context.ShoopingCartPizzas.AddAsync(existingPizzaInCart);
         }
-        else 
+        else
         {
             if (amount == 1) existingPizzaInCart.Amount += amount;
             else existingPizzaInCart.Amount = amount;
             _context.ShoopingCartPizzas.Update(existingPizzaInCart);
         }
-        
+
         await _context.SaveChangesAsync();
         await UpdateShoppingCartTotal();
 
@@ -137,20 +136,20 @@ public class ShoppingCartRepository : IShoppingCartService
             Id = db_shoppingCart.Id,
             TotalPrice = total,
             ShoppingCartItems = shoppingCartItems,
-            UserId= db_shoppingCart.UserId,
+            UserId = db_shoppingCart.UserId,
         };
 
         try
         {
-        _context.ShoppingCart.Update(updatedShoppingCart);
+            _context.ShoppingCart.Update(updatedShoppingCart);
         }
-        catch(Exception ex) { }
+        catch (Exception ex) { }
         await _context.SaveChangesAsync();
         return db_shoppingCart;
     }
     private async Task<Pizza> GetPizzaById(Guid pizzaId)
     {
-        var db_pizza = await _context.Pizzas.FirstOrDefaultAsync(x=>x.Id== pizzaId);
+        var db_pizza = await _context.Pizzas.FirstOrDefaultAsync(x => x.Id == pizzaId);
         return db_pizza == null ? throw new Exception("No such Pizza in database") : db_pizza;
     }
 

@@ -1,10 +1,12 @@
-﻿using PizzaDelivery.Domain.Models.User;
+﻿using PizzaDelivery.Application.Helpers;
+using PizzaDelivery.Domain.Models.User;
 
-namespace PizzaDelivery.Application.Interfaces;
+namespace PizzaDelivery.Application.Services.Interfaces;
 
-public interface IAuthService 
+public interface IAuthService
 {
-    
+
+    public PagedList<ApplicationUser> GetAllAsync(QueryStringParameters ownerParameters);
     public Task<ICollection<ApplicationUser>> GetAllAsync();
 
     public Task<ApplicationUser> GetCurrentUserInfo();

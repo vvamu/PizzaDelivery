@@ -1,7 +1,9 @@
 ﻿
 using Microsoft.AspNetCore.Authorization;
 using PizzaDelivery.Application.Models;
-using PizzaDelivery.Application.Interfaces;
+using PizzaDelivery.Application.Helpers;
+using Newtonsoft.Json;
+using PizzaDelivery.Application.Services.Interfaces;
 
 namespace OrderDeliveryApi.Controllers;
 
@@ -22,16 +24,22 @@ public class PromocodeController : ControllerBase
     }
 
     [HttpGet(Name = "GetAllPromocodesAsync")]
-    public async Task<ActionResult<ICollection<Promocode>>> GetAllAsync(int page = 1, int pageSize = 5)
+    public IActionResult GetAllAsync([FromQuery] QueryStringParameters parameters)
     {
-        if (page < 1 || pageSize < 1) throw new ArgumentOutOfRangeException();
-        var items = await _context.GetAllAsync();
-        var totalCount = items.Count;
-        var totalPages = (int)Math.Ceiling((decimal)totalCount / pageSize);
-        if (page > totalPages) throw new Exception("With this size of page the last page number - " + totalPages);
-        var itemPerPage = items.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+        var items = _context.GetAllAsync(parameters);
 
-        return Ok(itemPerPage);
+        var metadata = new
+        {
+            items.TotalCount,
+            items.PageSize,
+            items.CurrentPage,
+            items.TotalPages,
+            items.HasNext,
+            items.HasPrevious
+        };
+
+        Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(metadata));
+        return Ok(items);
     }
 
     [HttpGet("{id}", Name = "GetOneAsync")]

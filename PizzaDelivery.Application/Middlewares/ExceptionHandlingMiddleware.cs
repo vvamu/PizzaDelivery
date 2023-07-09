@@ -6,6 +6,7 @@ using System;
 using System.Net;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using Microsoft.AspNetCore.Http.Features;
+using Newtonsoft.Json;
 
 namespace PizzaDelivery.Application.HandleExceptions;
 
@@ -40,7 +41,7 @@ public class ExceptionHandlingMiddleware
         }
         catch (Exception ex)
         {
-            await HandleExceptionAsync(context, ex);
+             await HandleExceptionAsync(context, ex);
         }
     }
 
@@ -59,9 +60,19 @@ public class ExceptionHandlingMiddleware
         };
 
         _logger.LogError(error.ToString());
-        context.Response.ContentType = "application/json";
-        context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-        await context.Response.WriteAsJsonAsync(error);
+        _logger.LogError("Hello world!");
+
+        var serializerSettings = new JsonSerializerSettings
+        {
+            // Configure any settings you require, such as formatting, contract resolvers, or null value handling
+        };
+        
+
+        var result = JsonConvert.SerializeObject(error, serializerSettings);
+
+        //context.Response.ContentType = "application/json";
+        //context.Response.StatusCode = (int)(HttpStatusCode.InternalServerError);
+        await context.Response.WriteAsync(error.Message + "\n" + error.StatusCode);
     }
 
 

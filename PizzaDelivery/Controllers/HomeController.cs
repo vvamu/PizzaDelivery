@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using PizzaDelivery.Application.Interfaces;
+using PizzaDelivery.Application.Services.Interfaces;
 using PizzaDelivery.Domain.Models;
 using PizzaDelivery.Services;
 using PizzaDelivery.ViewModels;

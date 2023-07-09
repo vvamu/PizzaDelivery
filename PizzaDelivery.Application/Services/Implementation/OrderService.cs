@@ -2,14 +2,16 @@
 using PizzaDelivery.Domain.Models;
 using PizzaDelivery.Helpers;
 using PizzaDelivery.Models.Enums;
-using PizzaDelivery.Application.Interfaces;
 using System.Net;
 using Microsoft.AspNetCore.Identity;
 using PizzaDelivery.Domain.Models.User;
+using PizzaDelivery.Application.Helpers;
+using DocumentFormat.OpenXml.Spreadsheet;
+using PizzaDelivery.Application.Services.Interfaces;
 
-namespace PizzaDelivery.Application.Services;
+namespace PizzaDelivery.Application.Services.Implementation;
 
-public class OrderService :  IOrderService
+public class OrderService : IOrderService
 {
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
@@ -21,7 +23,7 @@ public class OrderService :  IOrderService
     {
         _context = context;
         _userManager = userManager;
-        _signInManager= signInManager;
+        _signInManager = signInManager;
     }
     private ApplicationUser CurrentUser
     {
@@ -32,9 +34,25 @@ public class OrderService :  IOrderService
             return current_user == null ? throw new Exception("Unauthorized") : current_user;
         }
     }
+
+    public PagedList<Order> GetAllAsync(QueryStringParameters ownerParameters)
+    {
+        var notDeliveredOrderStatus = Enum.GetName(typeof(OrderStatus), 1);
+        var orders = _context.Orders.OrderByDescending(o => o.OrderStatus == "NotDelivered").ThenByDescending(x => x.OrderDate);
+        return PagedList<Order>.ToPagedList(orders, ownerParameters.PageNumber, ownerParameters.PageSize);
+    }
+
+    public PagedList<Order> GetAllByUserAsync(QueryStringParameters ownerParameters)
+    {
+        var orders = _context.Orders.Where(x => x.UserId == CurrentUser.Id).
+            OrderByDescending(o => o.OrderStatus == "NotDelivered").ThenByDescending(x => x.OrderDate);
+        return PagedList<Order>.ToPagedList(orders, ownerParameters.PageNumber, ownerParameters.PageSize);
+    }
+
+
     public async Task<ICollection<Order>> GetAllAsync()
     {
-        var NotDeliveredOrderStatus = Enum.GetName(typeof(OrderStatus), 1);
+        var notDeliveredOrderStatus = Enum.GetName(typeof(OrderStatus), 1);
         return await _context.Orders.OrderByDescending(o => o.OrderStatus == "NotDelivered").ThenByDescending(x => x.OrderDate).ToListAsync();
     }
     public async Task<ICollection<Order>> GetNotDeliveredOrdersAsync()
@@ -44,7 +62,7 @@ public class OrderService :  IOrderService
 
     public async Task<ICollection<Order>> GetAllByUserAsync(string userId = null)
     {
-        if(string.IsNullOrEmpty(userId))
+        if (string.IsNullOrEmpty(userId))
         {
             var username = _signInManager.Context.User.Identity.Name;
             var current_user = await _userManager.FindByNameAsync(username);
@@ -54,7 +72,7 @@ public class OrderService :  IOrderService
     }
     public async Task<Order> GetAsync(Guid orderId)
     {
-        var order = await _context.Orders.Include(x=>x.User).FirstOrDefaultAsync(x => x.Id == orderId);
+        var order = await _context.Orders.Include(x => x.User).FirstOrDefaultAsync(x => x.Id == orderId);
         var userOrders = await GetAllByUserAsync();
         if (_signInManager.Context.User.IsInRole("User") && userOrders.Any(o => o.Id == orderId))
         {
@@ -65,8 +83,8 @@ public class OrderService :  IOrderService
     }
     public async Task<Order> CreateAsync(OrderCreationModel item)
     {
-        var db_shoppingCart = await _context.ShoppingCart.Include(x => x.User).FirstOrDefaultAsync(x => x.User.Id == CurrentUser.Id);
-        var totalPrice = db_shoppingCart.TotalPrice;
+        var dbShoppingCart = await _context.ShoppingCart.Include(x => x.User).FirstOrDefaultAsync(x => x.User.Id == CurrentUser.Id);
+        var totalPrice = dbShoppingCart.TotalPrice;
         if (totalPrice == 0) throw new Exception("Add items to create order");
 
         var correctItem = new Order()
@@ -84,7 +102,7 @@ public class OrderService :  IOrderService
         await _context.Orders.AddAsync(correctItem);
         await _context.SaveChangesAsync();
 
-        var shoppingCart = await _context.ShoppingCart.Include(x=>x.User).FirstOrDefaultAsync(x => x.UserId == CurrentUser.Id);
+        var shoppingCart = await _context.ShoppingCart.Include(x => x.User).FirstOrDefaultAsync(x => x.UserId == CurrentUser.Id);
 
 
         if (shoppingCart != null)
@@ -92,7 +110,7 @@ public class OrderService :  IOrderService
             var cartItems = await _context.ShoopingCartPizzas
                 .Where(x => x.ShoppingCartId == shoppingCart.Id)
                 .ToListAsync();
-            List<OrderItem> orderItems= new List<OrderItem>();
+            List<OrderItem> orderItems = new List<OrderItem>();
             foreach (var cartItem in cartItems)
             {
                 var orderItem = new OrderItem()
@@ -104,7 +122,7 @@ public class OrderService :  IOrderService
 
                 orderItems.Add(orderItem);
             }
-            await _context.OrderItems.AddRangeAsync(orderItems); 
+            await _context.OrderItems.AddRangeAsync(orderItems);
             _context.ShoopingCartPizzas.RemoveRange(cartItems);
         }
         await _context.SaveChangesAsync();
@@ -116,15 +134,15 @@ public class OrderService :  IOrderService
     {
         var order = await GetAsync(orderId);
         if (!(await GetNotDeliveredOrdersAsync()).Any(x => x.Id == order.Id)) throw new Exception("Order was delivered");
-        var db_promocode = await CheckCorrectPromocode(promocodeValue);
+        var dbPromocode = await CheckCorrectPromocode(promocodeValue);
         if (order.PromocodeId != default)
         {
             var existingPromoCode = await _context.Promocodes.FindAsync(order.PromocodeId);
-            var total2 = order.TotalPrice / (decimal)((double)existingPromoCode.SalePercent / (double)100);
+            var total2 = order.TotalPrice / (decimal)(existingPromoCode.SalePercent / (double)100);
             order.TotalPrice = total2;
         }
-        order.TotalPrice = (decimal)((double)order.TotalPrice * ((double)100 -(double)db_promocode.SalePercent) / (double)100);
-        order.PromocodeId = db_promocode.Id;
+        order.TotalPrice = (decimal)((double)order.TotalPrice * (100 - (double)dbPromocode.SalePercent) / 100);
+        order.PromocodeId = dbPromocode.Id;
         try
         {
             _context.Orders.Update(order);
@@ -142,7 +160,7 @@ public class OrderService :  IOrderService
 
     public async Task<ICollection<OrderItem>> GetAllOrderItems()
     {
-        return await _context.OrderItems.Include(x=>x.Order).Include(x=>x.Pizza).ToListAsync();
+        return await _context.OrderItems.Include(x => x.Order).Include(x => x.Pizza).ToListAsync();
     }
 
 }

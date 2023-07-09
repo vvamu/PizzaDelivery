@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using PizzaDelivery.Application.Interfaces;
+using Newtonsoft.Json;
+using PizzaDelivery.Application.Helpers;
 using PizzaDelivery.Application.Models;
+using PizzaDelivery.Application.Services.Interfaces;
 
 namespace PizzaDeliveryApi.Controllers;
 
@@ -20,30 +22,43 @@ public class OrdersController : ControllerBase
 
     [HttpGet(Name = "GetAllOrdersByUser")]
     [Authorize(Roles = "User")]
-    public async Task<ActionResult<ICollection<Order>>> GetAllOrdersByUser(int page = 1, int pageSize = 5)
+    public ActionResult GetAllOrdersByUser([FromQuery] QueryStringParameters queryStringParameters)
     {
-        if (page < 1 || pageSize < 1) throw new ArgumentOutOfRangeException();
-        var items = await _context.GetAllByUserAsync();
-        var totalCount = items.Count;
-        var totalPages = (int)Math.Ceiling((decimal)totalCount / pageSize);
-        if (page > totalPages) throw new Exception("With this size of page the last page number - " + totalPages);
-        var itemPerPage = items.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+        var items = _context.GetAllByUserAsync(queryStringParameters);
 
-        return Ok(itemPerPage);
+        var metadata = new
+        {
+            items.TotalCount,
+            items.PageSize,
+            items.CurrentPage,
+            items.TotalPages,
+            items.HasNext,
+            items.HasPrevious
+        };
+
+        Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(metadata));
+        return Ok(items);
+
     }
 
     [HttpGet("All/", Name = "GetAllOrders")]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<ICollection<Order>>> GetAllOrders(int page = 1, int pageSize = 5)
+    public ActionResult GetAllOrders([FromQuery] QueryStringParameters queryStringParameters)
     {
-        if (page < 1 || pageSize < 1) throw new ArgumentOutOfRangeException();
-        var items = await _context.GetAllAsync();
-        var totalCount = items.Count;
-        var totalPages = (int)Math.Ceiling((decimal)totalCount / pageSize);
-        if (page > totalPages) throw new Exception("With this size of page the last page number - " + totalPages);
-        var itemPerPage = items.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+        var items = _context.GetAllAsync(queryStringParameters);
 
-        return Ok(itemPerPage);
+        var metadata = new
+        {
+            items.TotalCount,
+            items.PageSize,
+            items.CurrentPage,
+            items.TotalPages,
+            items.HasNext,
+            items.HasPrevious
+        };
+
+        Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(metadata));
+        return Ok(items);
     }
 
     [HttpGet("{orderId}", Name = "GetOrder")]

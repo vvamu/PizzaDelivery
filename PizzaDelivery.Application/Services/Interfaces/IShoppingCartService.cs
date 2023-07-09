@@ -1,6 +1,6 @@
 ﻿using PizzaDelivery.Domain.Models;
 
-namespace PizzaDelivery.Application.Interfaces;
+namespace PizzaDelivery.Application.Services.Interfaces;
 
 public interface IShoppingCartService
 {

@@ -1,5 +1,4 @@
 ﻿using PizzaDelivery.Domain.Models;
-using PizzaDelivery.Application.Interfaces;
 
 
 namespace PizzaDelivery.Services;

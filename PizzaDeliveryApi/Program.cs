@@ -2,20 +2,31 @@ global using PizzaDelivery.Domain.Models;
 global using Microsoft.AspNetCore.Mvc;
 
 using Microsoft.EntityFrameworkCore;
-using PizzaDelivery.Application.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Serilog;
-using PizzaDelivery.Application.Services;
 using PizzaDelivery.Application.Options;
 using PizzaDelivery.Application.Helpers;
 using PizzaDeliveryApi.Services;
 using MongoDB.Driver;
+using PizzaDelivery.Application.Services.Implementation;
+using PizzaDelivery.Application.Services.Interfaces;
 
-//var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
-//var logger = loggerFactory.CreateLogger<WebApplication>();
+#region Logging
+IConfiguration configuration = new ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json")
+.Build();
+
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(configuration)
+   .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Host.UseSerilog();
+#endregion
+
 var services = builder.Services;
+
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -46,8 +57,6 @@ builder.Services.AddTransient<IPromocodeService, PromocodeService>();
 builder.Services.AddTransient<IOrderService, OrderService>();
 builder.Services.AddTransient<IShoppingCartService, ShoppingCartRepository>();
 builder.Services.AddTransient<IAuthService, AuthService>();
-
-builder.Services.AddTransient<IDefalutDbContent,DefaultDbContent>();
 
 builder.Services.Configure<PasswordHasherOptions>(options =>
     options.CompatibilityMode = PasswordHasherCompatibilityMode.IdentityV2
@@ -100,11 +109,6 @@ builder.Services.AddAuthorization(options =>
 
 
 #region Options pattern 
-IConfiguration configuration = new ConfigurationBuilder()
-    .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("appsettings.json")
-.Build();
-
 builder.Services.AddSingleton(configuration);
 services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.OptionName));
 services.Configure<AdminOptions>(configuration.GetSection(AdminOptions.OptionName));
@@ -112,30 +116,7 @@ services.Configure<ConnectionStringsOptions>(configuration.GetSection(Connection
 #endregion
 
 
-var log = new LoggerConfiguration()
-    .WriteTo.MongoDBBson("mongodb://localhost:27017/serilog")
-    .CreateLogger();
-
-
-try
-{
-
-    // Log a test message
-    log.Information("Test log message");
-
-    // Flush the log events to ensure they are written to MongoDB
-    log.Dispose();
-}
-catch (Exception ex)
-{
-    // Handle connection error
-    Console.WriteLine($"Failed to connect to MongoDB: {ex.Message}");
-}
-
-//builder.Host.UseSerilog((context, configuration) =>
-//    configuration
-//    .MinimumLevel.Information()
-//    .ReadFrom.Configuration(context.Configuration)) ;
+services.AddHostedService<RepeatingService>();
 
 var app = builder.Build();
 
@@ -148,17 +129,18 @@ if (app.Environment.IsDevelopment())
 }
 
 
+app.UseDeveloperExceptionPage();
+//app.UseSerilogRequestLogging();
+
 
 app.UseMiddleware<PizzaDelivery.Application.HandleExceptions.ExceptionHandlingMiddleware>();
 app.UseRouting();
 
 app.UseHttpsRedirection();
-app.UseDeveloperExceptionPage();
 
 
 app.UseAuthentication();
 app.UseAuthorization();
-//app.UseSerilogRequestLogging();
 
 app.UseEndpoints(endpoints =>
 {
@@ -166,9 +148,6 @@ app.UseEndpoints(endpoints =>
 });
 app.UseStatusCodePages();
 
-
-var repitingService = new RepeatingService(log, app.Services.GetService<IServiceScopeFactory>());
-repitingService.StartAsync(CancellationToken.None);
 
 #region Roles
 using (var scope = app.Services.CreateScope())

@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using PizzaDelivery.Application.Interfaces;
 using PizzaDelivery.Application.Models;
+using PizzaDelivery.Application.Services.Interfaces;
 using PizzaDelivery.Domain.Models;
 
 namespace PizzaDeliveryApi.Controllers;

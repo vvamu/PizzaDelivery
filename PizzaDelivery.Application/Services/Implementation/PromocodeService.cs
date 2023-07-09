@@ -1,8 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using PizzaDelivery.Application.Interfaces;
+using PizzaDelivery.Application.Helpers;
+using PizzaDelivery.Application.Services.Interfaces;
 using PizzaDelivery.Domain.Models;
 
-namespace PizzaDelivery.Application.Services;
+namespace PizzaDelivery.Application.Services.Implementation;
 
 
 public class PromocodeService : IPromocodeService
@@ -18,11 +19,19 @@ public class PromocodeService : IPromocodeService
         return await _context.Promocodes.FirstOrDefaultAsync(x => x.Id == id);
     }
 
+    public PagedList<Promocode> GetAllAsync(QueryStringParameters queryStringParameters)
+    {
+        var items = _context.Promocodes;
+        return PagedList<Promocode>.ToPagedList(items, queryStringParameters.PageNumber, queryStringParameters.PageSize);
+
+    }
+
     public async Task<ICollection<Promocode>> GetAllAsync()
     {
         return await _context.Promocodes.ToListAsync();
-
     }
+
+
     public async Task<Promocode> CreateAsync(PromocodeCreationModel item)
     {
         if (item == null) throw new ArgumentNullException(nameof(item));

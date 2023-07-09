@@ -6,19 +6,19 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 
 using Microsoft.EntityFrameworkCore;
-using PizzaDelivery.Application.Interfaces;
 using PizzaDelivery.Domain.Models;
+using DocumentFormat.OpenXml.Drawing.Charts;
+using PizzaDelivery.Application.Helpers;
+using PizzaDelivery.Application.Services.Interfaces;
 
-
-
-namespace PizzaDelivery.Application.Services;
+namespace PizzaDelivery.Application.Services.Implementation;
 
 public class PizzaService : AbstractTransactionService, IPizzaService
 {
     private readonly ApplicationDbContext _context;
     private readonly IWebHostEnvironment _env;
 
-    public PizzaService(ApplicationDbContext context, IWebHostEnvironment env) :base (context)
+    public PizzaService(ApplicationDbContext context, IWebHostEnvironment env) : base(context)
     {
         _context = context;
         _env = env;
@@ -30,21 +30,32 @@ public class PizzaService : AbstractTransactionService, IPizzaService
     }
     public async Task<ICollection<Pizza>> GetAllAsync()
     {
+
         return await _context.Pizzas.ToListAsync();
     }
+
+    public PagedList<Pizza> GetAllAsync(QueryStringParameters ownerParameters)
+    {
+        var pizzas = _context.Pizzas.OrderBy(on => on.Name);
+
+        return PagedList<Pizza>.ToPagedList(pizzas,
+        ownerParameters.PageNumber,
+        ownerParameters.PageSize);
+    }
+
     public async Task<Pizza> CreateAsync(PizzaCreationModel item)
     {
         if (item == null) throw new ArgumentNullException(nameof(item));
         if (_context.Pizzas.Any(x => x.Name == item.Name)) throw new Exception("Pizza with such name alredy exists");
         //if (item.ImageFile == null || item.ImageFile.Length <= 0) throw new Exception("Error with file");
 
-            var pizza = new Pizza()
-            {
-                Name = item.Name,
-                Ingridients = item.Ingridients,
-                Price = item.Price,
-                Description = item.Desctiption,
-            };
+        var pizza = new Pizza()
+        {
+            Name = item.Name,
+            Ingridients = item.Ingridients,
+            Price = item.Price,
+            Description = item.Desctiption,
+        };
         await _context.Pizzas.AddAsync(pizza);
         await UpsertImage(pizza, item.ImageFile);
         var db_item = await _context.Pizzas.FindAsync(pizza.Id);
@@ -72,7 +83,7 @@ public class PizzaService : AbstractTransactionService, IPizzaService
         {
             File.Delete(db_item.ImagePath);
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             await RollbackAsync();
             throw new Exception("Failed to delete image", ex);
@@ -101,8 +112,8 @@ public class PizzaService : AbstractTransactionService, IPizzaService
 
                 var localPath = "\\PizzaDelivery.Domain\\Images\\";
                 string fileName = pizza.Name + fileExtension;
-                string filePath = System.IO.Path.Combine(parentDirectory, localPath, fileName);
-                if(!filePath.Contains(parentDirectory)) 
+                string filePath = Path.Combine(parentDirectory, localPath, fileName);
+                if (!filePath.Contains(parentDirectory))
                 {
                     filePath = parentDirectory + localPath + fileName;
                 }
@@ -122,8 +133,8 @@ public class PizzaService : AbstractTransactionService, IPizzaService
     public async Task<byte[]> GetImageBytesAsync(Guid pizzaId)
     {
         var pizza = await GetAsync(pizzaId);
-        if(!_context.Pizzas.Any(x=>x.Id == pizza.Id)) throw new Exception("No such Pizza");
-        if(File.Exists(pizza.ImagePath))
+        if (!_context.Pizzas.Any(x => x.Id == pizza.Id)) throw new Exception("No such Pizza");
+        if (File.Exists(pizza.ImagePath))
         {
             byte[] image = await File.ReadAllBytesAsync(pizza.ImagePath);
             return image;

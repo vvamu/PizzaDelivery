@@ -3,10 +3,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PizzaDelivery.Domain.Models.User;
 using PizzaDelivery.Persistence;
-using PizzaDelivery.Application.Interfaces;
 using PizzaDelivery.Application.Models;
 using Microsoft.AspNetCore.Authorization;
 using FuzzySharp;
+using PizzaDelivery.Application.Helpers;
+using Newtonsoft.Json;
+using PizzaDelivery.Application.Services.Interfaces;
 
 namespace PizzaDeliveryApi.Controllers;
 
@@ -29,16 +31,22 @@ public class UserController : ControllerBase
 
     [HttpGet(Name = "GetAllUsersAsync")]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<ApplicationUser>> GetAllUsersAsync(int page = 1, int pageSize = 5)
+    public ActionResult GetAllUsersAsync([FromQuery] QueryStringParameters parameters)
     {
-        if (page < 1 || pageSize < 1) throw new ArgumentOutOfRangeException();
-        var items = await _authService.GetAllAsync();
-        var totalCount = items.Count;
-        var totalPages = (int)Math.Ceiling((decimal)totalCount / pageSize);
-        if (page > totalPages) throw new Exception("With this size of page the last page number - " + totalPages);
-        var itemPerPage = items.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+        var items = _authService.GetAllAsync(parameters);
 
-        return Ok(itemPerPage);
+        var metadata = new
+        {
+            items.TotalCount,
+            items.PageSize,
+            items.CurrentPage,
+            items.TotalPages,
+            items.HasNext,
+            items.HasPrevious
+        };
+
+        Response.Headers.Add("X-Pagination", JsonConvert.SerializeObject(metadata));
+        return Ok(items);
 
     }
 

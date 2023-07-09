@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
-using PizzaDelivery.Application.Interfaces;
 using PizzaDelivery.Domain.Models.User;
 using System.Globalization;
 using System.Resources;
@@ -16,9 +15,9 @@ using PizzaDelivery.Domain.Models;
 using Microsoft.Extensions.Options;
 using PizzaDelivery.Application.Options;
 using PizzaDelivery.Application.Helpers;
+using PizzaDelivery.Application.Services.Interfaces;
 
-
-namespace PizzaDelivery.Application.Services;
+namespace PizzaDelivery.Application.Services.Implementation;
 
 public class AuthService : IAuthService
 {
@@ -29,7 +28,7 @@ public class AuthService : IAuthService
     private readonly AdminOptions _adminOptions;
 
     public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager,
-        ApplicationDbContext context, IOptions<JwtOptions> jwtOptions, IOptions<AdminOptions>  adminOptions)
+        ApplicationDbContext context, IOptions<JwtOptions> jwtOptions, IOptions<AdminOptions> adminOptions)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -38,6 +37,11 @@ public class AuthService : IAuthService
         _adminOptions = adminOptions.Value;
     }
 
+    public PagedList<ApplicationUser> GetAllAsync(QueryStringParameters queryStringParameters)
+    {
+        var items = _userManager.Users;
+        return PagedList<ApplicationUser>.ToPagedList(items, queryStringParameters.PageNumber, queryStringParameters.PageSize);
+    }
     public async Task<ICollection<ApplicationUser>> GetAllAsync()
     {
         var user = _signInManager.Context;
@@ -56,18 +60,18 @@ public class AuthService : IAuthService
         //if (!checkpassword.Succeeded) throw new Exception(checkpassword.IsNotAllowed.ToString());
 
         var has1 = db_user.OwnHashedPassword;
-        if(!HashProvider.VerifyHash(user.Password, has1)) throw new Exception("Incorrect password");
-        await _signInManager.SignInAsync(db_user,false);
+        if (!HashProvider.VerifyHash(user.Password, has1)) throw new Exception("Incorrect password");
+        await _signInManager.SignInAsync(db_user, false);
 
         return db_user;
     }
     public async Task<ApplicationUser> LogoutAsync()
     {
         var username = _signInManager.Context.User.Identity.Name;
-        var current_user = await  _userManager.FindByNameAsync(username);
+        var current_user = await _userManager.FindByNameAsync(username);
 
         await _signInManager.SignOutAsync();
-       
+
         return current_user;
     }
 
@@ -88,27 +92,27 @@ public class AuthService : IAuthService
 
         var applicationUser = new ApplicationUser()
         {
-            Email= user.Email,
+            Email = user.Email,
             UserName = user.Username,
             OwnHashedPassword = hashedPassword
         };
 
-        var result = await _userManager.CreateAsync(applicationUser,user.Password.Trim());
+        var result = await _userManager.CreateAsync(applicationUser, user.Password.Trim());
         if (!result.Succeeded) throw new Exception(result.Errors.FirstOrDefault().Description);
         await _context.SaveChangesAsync();
 
         var shoppingCart = new ShoppingCart() { User = applicationUser };
         await _context.ShoppingCart.AddAsync(shoppingCart);
-        applicationUser.ShoppingCart= shoppingCart;
+        applicationUser.ShoppingCart = shoppingCart;
         _context.Update(applicationUser);
         await _context.SaveChangesAsync();
 
 
         var adminEmail = _adminOptions.Email;
-        if (user.Email != adminEmail) await _userManager.AddToRoleAsync(applicationUser, "User"); 
+        if (user.Email != adminEmail) await _userManager.AddToRoleAsync(applicationUser, "User");
 
         await _context.SaveChangesAsync();
-        
+
         return applicationUser;
 
     }
@@ -161,7 +165,7 @@ public class AuthService : IAuthService
             Username = adminUserName,
             Password = adminPassword
         };
-       var db_user = await RegisterAsync(adminNew);
+        var db_user = await RegisterAsync(adminNew);
         var resRole = await _userManager.AddToRoleAsync(db_user, "Admin");
         //var resRole = await _userManager.AddClaimAsync(result, new Claim(ClaimTypes.Role,"Admin"));
         await _context.SaveChangesAsync();
@@ -182,7 +186,7 @@ public class AuthService : IAuthService
     public async Task<ApplicationUser> DeleteAccount(string userId = null)
     {
         ApplicationUser db_user = null;
-        if(string.IsNullOrEmpty(userId))
+        if (string.IsNullOrEmpty(userId))
         {
             var username = _signInManager.Context.User.Identity.Name;
             db_user = await _userManager.FindByNameAsync(username);
@@ -192,7 +196,7 @@ public class AuthService : IAuthService
         db_user = await _context.Users.FindAsync(userId);
         await _userManager.DeleteAsync(db_user);
         await _context.SaveChangesAsync();
-        
+
         return db_user;
     }
 

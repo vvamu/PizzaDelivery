@@ -1,8 +1,5 @@
-﻿using PizzaDelivery.Application.Interfaces;
-using System.Transactions;
-
-
-public abstract class AbstractTransactionService : ITransactionService
+﻿namespace PizzaDelivery.Application.Services;
+public abstract class AbstractTransactionService
 {
     private readonly ApplicationDbContext _db;
     public AbstractTransactionService(ApplicationDbContext db)

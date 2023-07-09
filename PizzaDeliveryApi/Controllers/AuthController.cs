@@ -3,10 +3,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PizzaDelivery.Domain.Models.User;
 using PizzaDelivery.Persistence;
-using PizzaDelivery.Application.Interfaces;
 using PizzaDelivery.Application.Models;
 using Microsoft.AspNetCore.Authorization;
 using PizzaDelivery.Application.Helpers;
+using PizzaDelivery.Application.Services.Interfaces;
+using Serilog;
 
 namespace PizzaDeliveryApi.Controllers;
 
@@ -17,12 +18,10 @@ public class AuthController : ControllerBase
 
     private readonly ILogger<AuthController> _logger;
     private readonly IAuthService _authService;
-    private readonly IDefalutDbContent _defalutDbContent;
-    public AuthController(ILogger<AuthController> logger, ApplicationDbContext context, IAuthService authService, IDefalutDbContent defalutDbContent)
+    public AuthController(ILogger<AuthController> logger, ApplicationDbContext context, IAuthService authService)
     {
         _logger = logger;
         _authService = authService;
-        _defalutDbContent = defalutDbContent;
     }
 
     [HttpGet("Account", Name = "GetOwnUserInfoAsync")]
@@ -38,6 +37,8 @@ public class AuthController : ControllerBase
     [Authorize]
     public async Task<ActionResult<ApplicationUser>> LogoutAsync()
     {
+        //_logger.Information("Auth");
+        //_logger.LogDebug("aaa");
         var db_user = await _authService.LogoutAsync();
         return db_user == null ? BadRequest(ModelState) : Ok(db_user);
     }
