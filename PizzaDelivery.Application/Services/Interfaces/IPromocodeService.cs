@@ -9,7 +9,7 @@ public interface IPromocodeService
     Task<ICollection<Promocode>> GetAllAsync(); // получение всех объектов
 
     Task<Promocode?> GetAsync(Guid id); // получение одного объекта по id
-    Task<Promocode?> CreateAsync(PromocodeCreationModel item); // создание объекта
+    Task<Promocode?> CreateAsync(PromocodeCreateModel item); // создание объекта
     Task<Promocode?> UpdateAsync(Promocode item); // обновление объекта
     Task<Promocode?> DeleteAsync(Guid id); // удаление объекта по id
     Task SaveChangesAsync();

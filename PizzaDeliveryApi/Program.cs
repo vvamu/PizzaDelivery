@@ -10,6 +10,12 @@ using PizzaDeliveryApi.Services;
 using MongoDB.Driver;
 using PizzaDelivery.Application.Services.Implementation;
 using PizzaDelivery.Application.Services.Interfaces;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using PizzaDeliveryApi.Controllers;
+using EmailProvider.Options;
+using EmailProvider.Interfaces;
+using EmailProvider;
+//using MailKit;
 
 #region Logging
 IConfiguration configuration = new ConfigurationBuilder()
@@ -31,6 +37,8 @@ var services = builder.Services;
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+services.AddAutoMapper(typeof(MappingProfile).Assembly);
+
 
 builder.Services.AddControllersWithViews().
     AddNewtonsoftJson(options =>
@@ -55,12 +63,14 @@ builder.Services.AddTransient<IPromocodeService, PromocodeService>();
 
 
 builder.Services.AddTransient<IOrderService, OrderService>();
-builder.Services.AddTransient<IShoppingCartService, ShoppingCartRepository>();
+builder.Services.AddTransient<IShoppingCartService, ShoppingCartService>();
 builder.Services.AddTransient<IAuthService, AuthService>();
 
 builder.Services.Configure<PasswordHasherOptions>(options =>
-    options.CompatibilityMode = PasswordHasherCompatibilityMode.IdentityV2
-);
+    options.CompatibilityMode = PasswordHasherCompatibilityMode.IdentityV2);
+
+services.AddTransient<IMailService, MailService>();
+
 
 #endregion
 
@@ -113,6 +123,7 @@ builder.Services.AddSingleton(configuration);
 services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.OptionName));
 services.Configure<AdminOptions>(configuration.GetSection(AdminOptions.OptionName));
 services.Configure<ConnectionStringsOptions>(configuration.GetSection(ConnectionStringsOptions.OptionName));
+services.Configure<MailOptions>(configuration.GetSection(MailOptions.OptionName));
 #endregion
 
 

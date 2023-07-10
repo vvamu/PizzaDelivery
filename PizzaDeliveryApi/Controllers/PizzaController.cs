@@ -65,7 +65,7 @@ public class PizzaController : ControllerBase
 
     [HttpPost(Name = "CreatePizza")]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<Pizza>> Create([FromForm]PizzaCreationModel pizza)
+    public async Task<ActionResult<Pizza>> Create([FromForm]PizzaCreateModel pizza)
     {
         return Ok(await _context.CreateAsync(pizza));
     }

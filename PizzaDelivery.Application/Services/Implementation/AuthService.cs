@@ -16,6 +16,10 @@ using Microsoft.Extensions.Options;
 using PizzaDelivery.Application.Options;
 using PizzaDelivery.Application.Helpers;
 using PizzaDelivery.Application.Services.Interfaces;
+using AutoMapper;
+using PizzaDelivery.Domain.Validators;
+using System.ComponentModel.DataAnnotations;
+using DocumentFormat.OpenXml.Spreadsheet;
 
 namespace PizzaDelivery.Application.Services.Implementation;
 
@@ -26,76 +30,96 @@ public class AuthService : IAuthService
     private readonly ApplicationDbContext _context;
     private readonly JwtOptions _jwtOptions;
     private readonly AdminOptions _adminOptions;
+    private readonly IMapper _mapper;
 
     public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager,
-        ApplicationDbContext context, IOptions<JwtOptions> jwtOptions, IOptions<AdminOptions> adminOptions)
+        ApplicationDbContext context, IOptions<JwtOptions> jwtOptions, IOptions<AdminOptions> adminOptions,
+        IMapper mapper)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _context = context;
         _jwtOptions = jwtOptions.Value;
         _adminOptions = adminOptions.Value;
+        _mapper = mapper;
     }
 
-    public PagedList<ApplicationUser> GetAllAsync(QueryStringParameters queryStringParameters)
+    public PagedList<UserDTO> GetAllAsync(QueryStringParameters queryStringParameters)
     {
         var items = _userManager.Users;
-        return PagedList<ApplicationUser>.ToPagedList(items, queryStringParameters.PageNumber, queryStringParameters.PageSize);
+        var usersDTO = items.Select(x => _mapper.Map<UserDTO>(x));
+        return PagedList<UserDTO>.ToPagedList(usersDTO, queryStringParameters.PageNumber, queryStringParameters.PageSize);
     }
     public async Task<ICollection<ApplicationUser>> GetAllAsync()
     {
-        var user = _signInManager.Context;
         return await _userManager.Users.ToListAsync();
     }
 
-    public async Task<ApplicationUser> LoginAsync(LoginUser user)
+    public async Task<UserDTO> LoginAsync(UserLogin user)
     {
         await CreateAdmin();
+        var validator = new UserLoginValidator();
+        var validationResult = await validator.ValidateAsync(user);
+
+        if (!validationResult.IsValid)
+        {
+            var errors = validationResult.Errors;
+            var errorsString = System.String.Concat(errors);
+            throw new Exception(errorsString);
+        }
+
         var users = await _userManager.Users.ToListAsync();
-        var db_user = await _userManager.FindByEmailAsync(user.Email);
-        if (db_user == null) throw new Exception("Not user with such email");
+        var dbUser = await _userManager.FindByEmailAsync(user.Email);
+        if (dbUser == null) throw new Exception("Not user with such email");
 
 
-        //var checkpassword = await _signInManager.PasswordSignInAsync(db_user.Id, user.Password.Trim(), false, false);
+        //var checkpassword = await _signInManager.PasswordSignInAsync(dbUser.Id, user.Password.Trim(), false, false);
         //if (!checkpassword.Succeeded) throw new Exception(checkpassword.IsNotAllowed.ToString());
 
-        var has1 = db_user.OwnHashedPassword;
+        var has1 = dbUser.OwnHashedPassword;
         if (!HashProvider.VerifyHash(user.Password, has1)) throw new Exception("Incorrect password");
-        await _signInManager.SignInAsync(db_user, false);
+        await _signInManager.SignInAsync(dbUser, false);
+        var dbUserDTO = _mapper.Map<UserDTO>(dbUser);
 
-        return db_user;
+        return dbUserDTO;
     }
-    public async Task<ApplicationUser> LogoutAsync()
+    public async Task<UserDTO> LogoutAsync()
     {
         var username = _signInManager.Context.User.Identity.Name;
-        var current_user = await _userManager.FindByNameAsync(username);
-
+        var currentUser = await _userManager.FindByNameAsync(username);
+        var currentUserDTO = _mapper.Map<UserDTO>(currentUser);
         await _signInManager.SignOutAsync();
 
-        return current_user;
+        return currentUserDTO;
     }
 
-    public async Task<ApplicationUser> GetCurrentUserInfo()
+    public async Task<UserDTO> GetCurrentUserInfo()
     {
         var username = _signInManager.Context.User.Identity.Name;
-        var current_user = await _userManager.FindByNameAsync(username);
+        var currentUser = await _userManager.FindByNameAsync(username);
+        var currentUserDTO = _mapper.Map<UserDTO>(currentUser);
 
-        return current_user;
+        return currentUserDTO;
     }
 
-    public async Task<ApplicationUser> RegisterAsync(RegisterUser user)
+    public async Task<UserDTO> RegisterAsync(UserRegister user)
     {
-        var db_user = await _userManager.FindByEmailAsync(user.Email);
-        if (db_user != null) throw new Exception("This email already in use");
+        var userRegisterValidator = new UserRegisterValidator();
+        var validationResult = await userRegisterValidator.ValidateAsync(user);
+        if (!validationResult.IsValid)
+        {
+            var errors = validationResult.Errors;
+            var errorsString = System.String.Concat(errors);
+            throw new Exception(errorsString);
+        }
+
+        var dbUser = await _userManager.FindByEmailAsync(user.Email);
+        if (dbUser != null) throw new Exception("This email already in use");
 
         string hashedPassword = HashProvider.ComputeHash(user.Password.Trim());
 
-        var applicationUser = new ApplicationUser()
-        {
-            Email = user.Email,
-            UserName = user.Username,
-            OwnHashedPassword = hashedPassword
-        };
+        var applicationUser = _mapper.Map<ApplicationUser>(user);
+        applicationUser.OwnHashedPassword = hashedPassword;
 
         var result = await _userManager.CreateAsync(applicationUser, user.Password.Trim());
         if (!result.Succeeded) throw new Exception(result.Errors.FirstOrDefault().Description);
@@ -112,23 +136,19 @@ public class AuthService : IAuthService
         if (user.Email != adminEmail) await _userManager.AddToRoleAsync(applicationUser, "User");
 
         await _context.SaveChangesAsync();
-
-        return applicationUser;
+        var userDTO = _mapper.Map<UserDTO>(applicationUser);
+        return userDTO;
 
     }
-
-
-    public async Task<string> GetRole(ApplicationUser user)
+    public async Task<string> GetRole(string userEmail)
     {
-        var db_user = _userManager.FindByEmailAsync(user.Email).Result;
-        var roles = await _userManager.GetRolesAsync(db_user);
+        var dbUser = _userManager.FindByEmailAsync(userEmail).Result;
+        var roles = await _userManager.GetRolesAsync(dbUser);
         var rolesString = string.Join(",", roles);
 
         return rolesString;
     }
-
-
-    public string GenerateTokenString(LoginUser user)
+    public string GenerateTokenString(UserLogin user)
     {
         var claims = new List<Claim>
             {
@@ -159,14 +179,14 @@ public class AuthService : IAuthService
         var result = await _userManager.FindByEmailAsync(adminEmail);
         if (result != null) return;
 
-        var adminNew = new RegisterUser()
+        var adminNew = new UserRegister()
         {
             Email = adminEmail,
             Username = adminUserName,
             Password = adminPassword
         };
-        var db_user = await RegisterAsync(adminNew);
-        var resRole = await _userManager.AddToRoleAsync(db_user, "Admin");
+        var dbUser = _mapper.Map<ApplicationUser>(await RegisterAsync(adminNew));
+        var resRole = await _userManager.AddToRoleAsync(dbUser, "Admin");
         //var resRole = await _userManager.AddClaimAsync(result, new Claim(ClaimTypes.Role,"Admin"));
         await _context.SaveChangesAsync();
     }
@@ -178,26 +198,25 @@ public class AuthService : IAuthService
 
         await _context.SaveChangesAsync();
         if (_userManager.Users.Count() > 0) return false;
-
-
         return true;
     }
 
-    public async Task<ApplicationUser> DeleteAccount(string userId = null)
+    public async Task<UserDTO> DeleteAccount(string userId = null)
     {
-        ApplicationUser db_user = null;
+        ApplicationUser dbUser = null;
         if (string.IsNullOrEmpty(userId))
         {
             var username = _signInManager.Context.User.Identity.Name;
-            db_user = await _userManager.FindByNameAsync(username);
-            userId = db_user.Id;
+            dbUser = await _userManager.FindByNameAsync(username);
+            userId = dbUser.Id;
             await LogoutAsync();
         }
-        db_user = await _context.Users.FindAsync(userId);
-        await _userManager.DeleteAsync(db_user);
+        dbUser = await _context.Users.FindAsync(userId);
+        await _userManager.DeleteAsync(dbUser);
         await _context.SaveChangesAsync();
+        var userDTO = _mapper.Map<UserDTO>(dbUser);
 
-        return db_user;
+        return userDTO;
     }
 
 }

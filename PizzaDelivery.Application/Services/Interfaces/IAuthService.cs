@@ -6,18 +6,18 @@ namespace PizzaDelivery.Application.Services.Interfaces;
 public interface IAuthService
 {
 
-    public PagedList<ApplicationUser> GetAllAsync(QueryStringParameters ownerParameters);
+    public PagedList<UserDTO> GetAllAsync(QueryStringParameters ownerParameters);
     public Task<ICollection<ApplicationUser>> GetAllAsync();
 
-    public Task<ApplicationUser> GetCurrentUserInfo();
-    public Task<ApplicationUser> LoginAsync(LoginUser user);
-    public Task<ApplicationUser> LogoutAsync();
-    public Task<ApplicationUser> RegisterAsync(RegisterUser user);
+    public Task<UserDTO> GetCurrentUserInfo();
+    public Task<UserDTO> LoginAsync(UserLogin user);
+    public Task<UserDTO> LogoutAsync();
+    public Task<UserDTO> RegisterAsync(UserRegister user);
 
-    public Task<string> GetRole(ApplicationUser user);
-    public string GenerateTokenString(LoginUser user);
+    public Task<string> GetRole(string userEmail);
+    public string GenerateTokenString(UserLogin user);
 
     public Task<bool> DeleteAll();
-    public Task<ApplicationUser> DeleteAccount(string userId = null);
+    public Task<UserDTO> DeleteAccount(string userId = null);
 
 }

@@ -51,7 +51,7 @@ public class PromocodeController : ControllerBase
     }
 
     [HttpPost(Name = "CreatePromocodeAsync")]
-    public async Task<ActionResult<Promocode>> CreateAsync(PromocodeCreationModel promocode)
+    public async Task<ActionResult<Promocode>> CreateAsync(PromocodeCreateModel promocode)
     {
         return Ok(await _context.CreateAsync(promocode));
     }

@@ -8,22 +8,27 @@ using PizzaDelivery.Domain.Models.User;
 using PizzaDelivery.Application.Helpers;
 using DocumentFormat.OpenXml.Spreadsheet;
 using PizzaDelivery.Application.Services.Interfaces;
+using AutoMapper;
+using PizzaDelivery.Application.DTO;
+using PizzaDelivery.Domain.Validators;
 
 namespace PizzaDelivery.Application.Services.Implementation;
 
-public class OrderService : IOrderService
+public class OrderService : AbstractTransactionService, IOrderService
 {
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly IMapper _mapper;
 
 
     public OrderService(ApplicationDbContext context, UserManager<ApplicationUser> userManager,
-        SignInManager<ApplicationUser> signInManager)
+        SignInManager<ApplicationUser> signInManager, IMapper mapper) : base(context)
     {
         _context = context;
         _userManager = userManager;
         _signInManager = signInManager;
+        _mapper = mapper;
     }
     private ApplicationUser CurrentUser
     {
@@ -35,32 +40,104 @@ public class OrderService : IOrderService
         }
     }
 
-    public PagedList<Order> GetAllAsync(QueryStringParameters ownerParameters)
+    public PagedList<OrderDTO> GetAllAsync(QueryStringParameters ownerParameters)
     {
-        var notDeliveredOrderStatus = Enum.GetName(typeof(OrderStatus), 1);
         var orders = _context.Orders.OrderByDescending(o => o.OrderStatus == "NotDelivered").ThenByDescending(x => x.OrderDate);
-        return PagedList<Order>.ToPagedList(orders, ownerParameters.PageNumber, ownerParameters.PageSize);
+        IQueryable<OrderDTO> ordersDTO = orders.Select(x=> _mapper.Map<OrderDTO>(x));
+
+        return PagedList<OrderDTO>.ToPagedList(ordersDTO, ownerParameters.PageNumber, ownerParameters.PageSize);
     }
 
-    public PagedList<Order> GetAllByUserAsync(QueryStringParameters ownerParameters)
+    public PagedList<OrderDTO> GetAllByUserAsync(QueryStringParameters ownerParameters)
     {
         var orders = _context.Orders.Where(x => x.UserId == CurrentUser.Id).
             OrderByDescending(o => o.OrderStatus == "NotDelivered").ThenByDescending(x => x.OrderDate);
-        return PagedList<Order>.ToPagedList(orders, ownerParameters.PageNumber, ownerParameters.PageSize);
+        var ordersDTO = orders.Select(x => _mapper.Map<OrderDTO>(x));
+        return PagedList<OrderDTO>.ToPagedList(ordersDTO, ownerParameters.PageNumber, ownerParameters.PageSize);
+    }
+
+    public async Task<OrderDTO> GetAsync(Guid orderId)
+    {
+        var order = await _context.Orders.Include(x => x.User).FirstOrDefaultAsync(x => x.Id == orderId);
+        var userOrders = await GetAllByUserAsync();
+        if (_signInManager.Context.User.IsInRole("User") && userOrders.Any(o => o.Id == orderId))
+        {
+            order = await _context.Orders.FirstOrDefaultAsync(x => x.Id == orderId);
+            return _mapper.Map<OrderDTO>(order);
+        }
+        throw new Exception("No Access");
+    }
+
+    public async Task<OrderDTO> CreateAsync(OrderCreationModel item)
+    {
+        var validator = new OrderValidator();
+        var validationResult = await validator.ValidateAsync(item);
+
+        if (!validationResult.IsValid)
+        {
+            var errors = validationResult.Errors;
+            var errorsString = String.Concat(errors);
+            throw new Exception(errorsString);
+        }
+
+        var dbShoppingCart = await _context.ShoppingCart.Include(x => x.User).FirstOrDefaultAsync(x => x.User.Id == CurrentUser.Id);
+        var totalPrice = dbShoppingCart.TotalPrice;
+        if (totalPrice == 0) throw new Exception("Add items to create order");
+
+        var correctItem = _mapper.Map<Order>(item);
+        correctItem.TotalPrice = totalPrice;
+        correctItem.UserId = CurrentUser.Id;
+
+        await BeginTransactionAsync();
+        try
+        {
+            await _context.Orders.AddAsync(correctItem);
+            await _context.SaveChangesAsync();
+
+            var shoppingCart = await _context.ShoppingCart.Include(x => x.User).FirstOrDefaultAsync(x => x.UserId == CurrentUser.Id);
+
+
+            if (shoppingCart != null)
+            {
+                var cartItems = await _context.ShoopingCartPizzas
+                    .Where(x => x.ShoppingCartId == shoppingCart.Id)
+                    .ToListAsync();
+                List<OrderItem> orderItems = new();
+                foreach (var cartItem in cartItems)
+                {
+                    var orderItem = _mapper.Map<OrderItem>(cartItem);
+                    orderItem.OrderId = correctItem.Id;
+
+                    orderItems.Add(orderItem);
+                    correctItem.OrderItems.Add(orderItem);
+                }
+                await _context.OrderItems.AddRangeAsync(orderItems);
+                _context.ShoopingCartPizzas.RemoveRange(cartItems);
+            }
+            await _context.SaveChangesAsync();
+        }
+        catch(Exception ex) {await RollbackAsync(); }
+        await CommitAsync();
+
+        return _mapper.Map<OrderDTO>(correctItem);
+    }
+    public async Task<ICollection<OrderItem>> GetAllOrderItems()
+    {
+        return await _context.OrderItems.Include(x => x.Order).Include(x => x.Pizza).ToListAsync();
     }
 
 
-    public async Task<ICollection<Order>> GetAllAsync()
+    private async Task<ICollection<Order>> GetAllAsync()
     {
         var notDeliveredOrderStatus = Enum.GetName(typeof(OrderStatus), 1);
         return await _context.Orders.OrderByDescending(o => o.OrderStatus == "NotDelivered").ThenByDescending(x => x.OrderDate).ToListAsync();
     }
-    public async Task<ICollection<Order>> GetNotDeliveredOrdersAsync()
+    private async Task<ICollection<Order>> GetNotDeliveredOrdersAsync()
     {
         return await _context.Orders.OrderByDescending(x => x.OrderDate).Where(o => o.OrderStatus == "NotDelivered").ToListAsync();
     }
 
-    public async Task<ICollection<Order>> GetAllByUserAsync(string userId = null)
+    private async Task<ICollection<Order>> GetAllByUserAsync(string userId = null)
     {
         if (string.IsNullOrEmpty(userId))
         {
@@ -70,7 +147,7 @@ public class OrderService : IOrderService
         }
         return await _context.Orders.Include(x => x.User).Where(x => x.User.Id == userId).ToListAsync();
     }
-    public async Task<Order> GetAsync(Guid orderId)
+    private async Task<Order> GetOrderAsync(Guid orderId)
     {
         var order = await _context.Orders.Include(x => x.User).FirstOrDefaultAsync(x => x.Id == orderId);
         var userOrders = await GetAllByUserAsync();
@@ -81,58 +158,10 @@ public class OrderService : IOrderService
         }
         throw new Exception("No Access");
     }
-    public async Task<Order> CreateAsync(OrderCreationModel item)
+
+    public async Task<OrderDTO> AddPromocodeToOrder(string promocodeValue, Guid orderId = default)
     {
-        var dbShoppingCart = await _context.ShoppingCart.Include(x => x.User).FirstOrDefaultAsync(x => x.User.Id == CurrentUser.Id);
-        var totalPrice = dbShoppingCart.TotalPrice;
-        if (totalPrice == 0) throw new Exception("Add items to create order");
-
-        var correctItem = new Order()
-        {
-            PaymentType = item.PaymentType,
-            Address = item.Address,
-            TotalPrice = totalPrice,
-            DeliveryType = item.DeliveryType,
-            Comment = item.Comment,
-            OrderDate = item.OrderDate,
-            UserId = CurrentUser.Id,
-            OrderStatus = "NotDelivered"
-        };
-
-        await _context.Orders.AddAsync(correctItem);
-        await _context.SaveChangesAsync();
-
-        var shoppingCart = await _context.ShoppingCart.Include(x => x.User).FirstOrDefaultAsync(x => x.UserId == CurrentUser.Id);
-
-
-        if (shoppingCart != null)
-        {
-            var cartItems = await _context.ShoopingCartPizzas
-                .Where(x => x.ShoppingCartId == shoppingCart.Id)
-                .ToListAsync();
-            List<OrderItem> orderItems = new List<OrderItem>();
-            foreach (var cartItem in cartItems)
-            {
-                var orderItem = new OrderItem()
-                {
-                    PizzaId = cartItem.PizzaId,
-                    Amount = cartItem.Amount,
-                    OrderId = correctItem.Id
-                };
-
-                orderItems.Add(orderItem);
-            }
-            await _context.OrderItems.AddRangeAsync(orderItems);
-            _context.ShoopingCartPizzas.RemoveRange(cartItems);
-        }
-        await _context.SaveChangesAsync();
-
-        return correctItem;
-    }
-
-    public async Task<Order> AddPromocodeToOrder(string promocodeValue, Guid orderId = default)
-    {
-        var order = await GetAsync(orderId);
+        var order = await GetOrderAsync(orderId);
         if (!(await GetNotDeliveredOrdersAsync()).Any(x => x.Id == order.Id)) throw new Exception("Order was delivered");
         var dbPromocode = await CheckCorrectPromocode(promocodeValue);
         if (order.PromocodeId != default)
@@ -149,18 +178,14 @@ public class OrderService : IOrderService
         }
         catch { }
         await _context.SaveChangesAsync();
-        order = await GetAsync(orderId);
-        return order;
+        var orderDTO = await GetAsync(orderId);
+        return orderDTO;
     }
-    public async Task<Promocode> CheckCorrectPromocode(string promocodeValue)
+    private async Task<Promocode> CheckCorrectPromocode(string promocodeValue)
     {
         var promocode = await _context.Promocodes.FirstOrDefaultAsync(x => x.Value == promocodeValue);
         return promocode == null ? throw new Exception("No such promocode in database") : promocode;
     }
 
-    public async Task<ICollection<OrderItem>> GetAllOrderItems()
-    {
-        return await _context.OrderItems.Include(x => x.Order).Include(x => x.Pizza).ToListAsync();
-    }
-
 }
+

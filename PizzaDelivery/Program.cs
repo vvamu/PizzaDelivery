@@ -35,7 +35,7 @@ builder.Services.AddTransient<IPromocodeService, PromocodeService>();
 
 
 builder.Services.AddTransient<IOrderService, OrderService>();
-builder.Services.AddTransient<IShoppingCartService, ShoppingCartRepository>();
+builder.Services.AddTransient<IShoppingCartService, ShoppingCartService>();
 builder.Services.AddTransient<IAuthService, AuthService>();
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();

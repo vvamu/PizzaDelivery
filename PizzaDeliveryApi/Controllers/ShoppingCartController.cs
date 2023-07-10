@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using PizzaDelivery.Application.DTO;
 using PizzaDelivery.Application.Models;
 using PizzaDelivery.Application.Services.Interfaces;
 using PizzaDelivery.Domain.Models;
@@ -19,37 +20,37 @@ public class ShoppingCartController : ControllerBase
         _context = context;
     }
     [HttpGet(Name = "GetShoppingCartAsync")]
-    public async Task<ActionResult<ShoppingCart>> GetShoppingCartAsync()
+    public async Task<ActionResult<ShoppingCartDTO>> GetShoppingCartAsync()
     {
         await _context.UpdateShoppingCartTotal();
-        var db_shoppingCart = await _context.GetShoppingCartAsync();
+        var db_shoppingCart = await _context.GetShoppingCartAsyncDTO();
         return db_shoppingCart == null ? BadRequest(db_shoppingCart) : Ok(db_shoppingCart);
     }
 
     [HttpGet("Items", Name = "GetAllShoppingCartItemsAsync")]
-    public async Task<ActionResult<ICollection<ShoppingCartItem>>> GetAllShoppingCartItemsAsync()
+    public async Task<ActionResult<ICollection<ShoppingCartItemDTO>>> GetAllShoppingCartItemsAsync()
     {
         await _context.UpdateShoppingCartTotal();
-        var shoppingCartItems = await _context.GetAllShoppingCartItemsAsync();
+        var shoppingCartItems = await _context.GetAllShoppingCartItemsAsyncDTO();
         return shoppingCartItems == null ? Ok("Shopping cart empty") : Ok(shoppingCartItems);
     }
 
     [HttpPost("Items/{pizzaId}", Name = "AddOneToShoppingCartAsync")]
-    public async Task<ActionResult<ShoppingCartItem>> AddOneToShoppingCartAsync(Guid pizzaId)
+    public async Task<ActionResult<ShoppingCartItemDTO>> AddOneToShoppingCartAsync(Guid pizzaId)
     {
-        var db_shoppingCartItem = await _context.AddOneToShoppingCartAsync(pizzaId);
+        var db_shoppingCartItem = await _context.AddOneToShoppingCartAsyncDTO(pizzaId);
         return db_shoppingCartItem == null ? BadRequest(db_shoppingCartItem) : Ok(db_shoppingCartItem);
     }
     [HttpDelete("Items/{shoppingCartItemId}", Name = "RemoveOneFromShoppingCartAsync")]
-    public async Task<ActionResult<ShoppingCartItem>> RemoveOneFromShoppingCartAsync(Guid shoppingCartItemId)
+    public async Task<ActionResult<ShoppingCartItemDTO>> RemoveOneFromShoppingCartAsync(Guid shoppingCartItemId)
     {
-        var db_shoppingCartItem = await _context.RemoveOneFromShoppingCartAsync(shoppingCartItemId);
+        var db_shoppingCartItem = await _context.RemoveOneFromShoppingCartAsyncDTO(shoppingCartItemId);
         return db_shoppingCartItem == null ? BadRequest(db_shoppingCartItem) : Ok(db_shoppingCartItem);
     }
     [HttpPut("Items/{pizzaId}",Name = "UpdateItemInShoppingCartAsync")]
-    public async Task<ActionResult<ShoppingCartItem>> UpdateItemInShoppingCartAsync(Guid pizzaId, [FromQuery] int amount)
+    public async Task<ActionResult<ShoppingCartItemDTO>> UpdateItemInShoppingCartAsync(Guid pizzaId, [FromQuery] int amount)
     {
-        var db_shoppingCartItem = await _context.UpdateItemInShoppingCartAsync(pizzaId, amount);
+        var db_shoppingCartItem = await _context.UpdateItemInShoppingCartAsyncDTO(pizzaId, amount);
         return db_shoppingCartItem == null ? BadRequest(db_shoppingCartItem) : Ok(db_shoppingCartItem);
     }
     [HttpDelete("Clear",Name = "ClearCartAsync")]

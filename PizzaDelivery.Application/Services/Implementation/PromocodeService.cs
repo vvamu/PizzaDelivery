@@ -1,7 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoMapper;
+using FluentValidation;
+using Microsoft.EntityFrameworkCore;
 using PizzaDelivery.Application.Helpers;
 using PizzaDelivery.Application.Services.Interfaces;
 using PizzaDelivery.Domain.Models;
+using PizzaDelivery.Domain.Validators;
 
 namespace PizzaDelivery.Application.Services.Implementation;
 
@@ -9,10 +12,12 @@ namespace PizzaDelivery.Application.Services.Implementation;
 public class PromocodeService : IPromocodeService
 {
     private ApplicationDbContext _context;
+    private IMapper _mapper;
 
-    public PromocodeService(ApplicationDbContext context)
+    public PromocodeService(ApplicationDbContext context, IMapper mapper)
     {
         _context = context;
+        _mapper = mapper;
     }
     public async Task<Promocode> GetAsync(Guid id)
     {
@@ -32,9 +37,18 @@ public class PromocodeService : IPromocodeService
     }
 
 
-    public async Task<Promocode> CreateAsync(PromocodeCreationModel item)
+    public async Task<Promocode> CreateAsync(PromocodeCreateModel item)
     {
-        if (item == null) throw new ArgumentNullException(nameof(item));
+        var validator = new PromocodeValidator();
+        var validationResult = await validator.ValidateAsync(item);
+
+        if (!validationResult.IsValid)
+        {
+            var errors = validationResult.Errors;
+            var errorsString = String.Concat(errors);
+            throw new Exception(errorsString);
+        }
+
         var promocode = new Promocode()
         {
             Value = item.Value,
@@ -48,7 +62,16 @@ public class PromocodeService : IPromocodeService
     }
     public async Task<Promocode> UpdateAsync(Promocode item)
     {
-        if (item == null) throw new ArgumentNullException(nameof(item));
+        var validator = new PromocodeValidator();
+        var validationResult = await validator.ValidateAsync(_mapper.Map<PromocodeCreateModel>(item));
+
+        if (!validationResult.IsValid)
+        {
+            var errors = validationResult.Errors;
+            var errorsString = String.Concat(errors);
+            throw new Exception(errorsString);
+        }
+
         var db_item = await _context.Promocodes.FirstOrDefaultAsync(x => x.Id == item.Id);
         if (db_item == null) throw new KeyNotFoundException();
         var promo = _context.Promocodes.Update(item);

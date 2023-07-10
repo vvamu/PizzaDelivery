@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  pizzadeliveryapi:
+    image: ${DOCKER_REGISTRY-}pizzadeliveryapi
+    build:
+      context: .
+      dockerfile: PizzaDeliveryApi\Dockerfile

@@ -5,14 +5,8 @@ namespace PizzaDelivery.Domain.Models;
 
 public class ShoppingCart : BaseModel
 {
-   public ShoppingCart()
-    {
-        ShoppingCartItems = new List<ShoppingCartItem>();
-    }
-
     public decimal TotalPrice { get; set; }
-    public ICollection<ShoppingCartItem> ShoppingCartItems { get; set; }
-
+    public ICollection<ShoppingCartItem> ShoppingCartItems { get; set; } = new List<ShoppingCartItem>();
     public string UserId { get; set; }
     public ApplicationUser User { get; set; }
 

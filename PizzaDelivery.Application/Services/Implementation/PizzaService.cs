@@ -10,19 +10,21 @@ using PizzaDelivery.Domain.Models;
 using DocumentFormat.OpenXml.Drawing.Charts;
 using PizzaDelivery.Application.Helpers;
 using PizzaDelivery.Application.Services.Interfaces;
+using AutoMapper;
+using PizzaDelivery.Domain.Validators;
+using FluentValidation;
 
 namespace PizzaDelivery.Application.Services.Implementation;
 
 public class PizzaService : AbstractTransactionService, IPizzaService
 {
     private readonly ApplicationDbContext _context;
-    private readonly IWebHostEnvironment _env;
+    private readonly IMapper _mapper;
 
-    public PizzaService(ApplicationDbContext context, IWebHostEnvironment env) : base(context)
+    public PizzaService(ApplicationDbContext context, IMapper mapper) : base(context)
     {
         _context = context;
-        _env = env;
-
+        _mapper = mapper;
     }
     public async Task<Pizza?> GetAsync(Guid id)
     {
@@ -43,19 +45,22 @@ public class PizzaService : AbstractTransactionService, IPizzaService
         ownerParameters.PageSize);
     }
 
-    public async Task<Pizza> CreateAsync(PizzaCreationModel item)
+    public async Task<Pizza> CreateAsync(PizzaCreateModel item)
     {
-        if (item == null) throw new ArgumentNullException(nameof(item));
+        var validator = new PizzaValidator();
+        var validationResult = await validator.ValidateAsync(item);
+
+        if (!validationResult.IsValid)
+        {
+            var errors = validationResult.Errors;
+            var errorsString = String.Concat(errors);
+            throw new Exception(errorsString);
+        }
+
         if (_context.Pizzas.Any(x => x.Name == item.Name)) throw new Exception("Pizza with such name alredy exists");
         //if (item.ImageFile == null || item.ImageFile.Length <= 0) throw new Exception("Error with file");
 
-        var pizza = new Pizza()
-        {
-            Name = item.Name,
-            Ingridients = item.Ingridients,
-            Price = item.Price,
-            Description = item.Desctiption,
-        };
+        var pizza = _mapper.Map<Pizza>(item);
         await _context.Pizzas.AddAsync(pizza);
         await UpsertImage(pizza, item.ImageFile);
         var db_item = await _context.Pizzas.FindAsync(pizza.Id);
@@ -66,7 +71,15 @@ public class PizzaService : AbstractTransactionService, IPizzaService
     }
     public async Task<Pizza> UpdateAsync(Pizza item)
     {
-        if (item == null) throw new ArgumentNullException(nameof(item));
+        var validator = new PizzaValidator();
+        var validationResult = await validator.ValidateAsync(_mapper.Map<PizzaCreateModel>(item));
+
+        if (!validationResult.IsValid)
+        {
+            var errors = validationResult.Errors;
+            var errorsString = String.Concat(errors);
+            throw new Exception(errorsString);
+        }
         var db_item = await _context.Pizzas.FirstOrDefaultAsync(x => x.Id == item.Id);
         if (db_item == null) throw new KeyNotFoundException();
         var promo = _context.Pizzas.Update(item);

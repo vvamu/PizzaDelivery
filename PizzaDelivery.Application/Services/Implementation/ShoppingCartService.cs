@@ -5,17 +5,18 @@ using PizzaDelivery.Domain.Models;
 using System.Drawing;
 using PizzaDelivery.Domain.Models.User;
 using PizzaDelivery.Application.Services.Interfaces;
+using AutoMapper;
+using PizzaDelivery.Application.DTO;
 
 namespace PizzaDelivery.Application.Services.Implementation;
 
 
-public class ShoppingCartRepository : IShoppingCartService
+public class ShoppingCartService : IShoppingCartService
 {
     private readonly ApplicationDbContext _context;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
-    //private readonly PizzaDelivery.DomainRealize.Interfaces.IRepository<ShoppingCart> _shoppingCartRepository;
-
+    private readonly IMapper _mapper;
     private ApplicationUser CurrentUser
     {
         get
@@ -26,14 +27,27 @@ public class ShoppingCartRepository : IShoppingCartService
         }
     }
 
-    public ShoppingCartRepository(ApplicationDbContext context,
-        //PizzaDelivery.DomainRealize.Interfaces.IRepository<ShoppingCart> shoppingCartRep,
-        UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
+    public ShoppingCartService(ApplicationDbContext context,
+        UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager,
+        IMapper mapper)
     {
         _context = context;
         //_shoppingCartRepository = shoppingCartRep;
         _userManager = userManager;
         _signInManager = signInManager;
+        _mapper = mapper;
+    }
+
+    public async Task<ShoppingCartDTO> GetShoppingCartAsyncDTO()
+    {
+        var current_user = CurrentUser;
+        var shoppingCartId = _context.ShoppingCart.Include(x => x.User).Where(x => x.User.Id == current_user.Id).FirstOrDefault().Id;
+
+        var shoppingCarts = await _context.ShoppingCart.Include(x => x.ShoppingCartItems).Where(x => x.Id == shoppingCartId).ToListAsync();
+        if (shoppingCarts.Count > 1) throw new Exception("More than 1 shopping cart");
+        var shoppingCart = shoppingCarts.FirstOrDefault();
+
+        return shoppingCart == null ? throw new Exception("Error with shopping cart") : _mapper.Map<ShoppingCartDTO>(shoppingCart);
     }
     public async Task<ShoppingCart> GetShoppingCartAsync()
     {
@@ -51,9 +65,21 @@ public class ShoppingCartRepository : IShoppingCartService
         var shoppingCart = await _context.ShoopingCartPizzas.Include(x => x.ShoppingCart).FirstOrDefaultAsync(x => x.Id == shoppingCartItemId);
         return shoppingCart == null ? throw new Exception("No shopping cart item") : shoppingCart;
     }
+    public async Task<ShoppingCartItemDTO> AddOneToShoppingCartAsyncDTO(Guid pizzaId)
+    {
+        return await UpdateItemInShoppingCartAsyncDTO(pizzaId);
+    }
+
     public async Task<ShoppingCartItem> AddOneToShoppingCartAsync(Guid pizzaId)
     {
         return await UpdateItemInShoppingCartAsync(pizzaId);
+    }
+
+    public async Task<ShoppingCartItemDTO> RemoveOneFromShoppingCartAsyncDTO(Guid shoppingCartItemId)
+    {
+
+        var item = RemoveOneFromShoppingCartAsync(shoppingCartItemId);
+        return _mapper.Map<ShoppingCartItemDTO>(item);
     }
 
     public async Task<ShoppingCartItem> RemoveOneFromShoppingCartAsync(Guid shoppingCartItemId)
@@ -73,9 +99,15 @@ public class ShoppingCartRepository : IShoppingCartService
 
         return db_shoppingCartItem;
     }
+    public async Task<ShoppingCartItemDTO> UpdateItemInShoppingCartAsyncDTO(Guid pizzaId, int amount = 1)
+    {
+        var item = UpdateItemInShoppingCartAsync(pizzaId, amount);
+        return _mapper.Map<ShoppingCartItemDTO>(item);
+    }
 
     public async Task<ShoppingCartItem> UpdateItemInShoppingCartAsync(Guid pizzaId, int amount = 1)
     {
+        if(amount<0) throw new ArgumentException(nameof(amount));
         var userShoppingCart = await GetShoppingCartAsync();
         var shoppingCartItems = await GetAllShoppingCartItemsAsync();
         var existingPizzaInCart = shoppingCartItems.FirstOrDefault(x => x.Pizza.Id == pizzaId);
@@ -112,6 +144,13 @@ public class ShoppingCartRepository : IShoppingCartService
         db_shoppingCartItems = await GetAllShoppingCartItemsAsync();
 
         return db_shoppingCartItems;
+    }
+
+    public async Task<ICollection<ShoppingCartItemDTO>> GetAllShoppingCartItemsAsyncDTO()
+    {
+
+        var shoppingCartPizzasDTO = (await GetAllShoppingCartItemsAsync()).Select(x => _mapper.Map<ShoppingCartItemDTO>(x)).ToList();
+        return shoppingCartPizzasDTO;
     }
     public async Task<ICollection<ShoppingCartItem>> GetAllShoppingCartItemsAsync()
     {

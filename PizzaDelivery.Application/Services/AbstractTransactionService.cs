@@ -18,7 +18,7 @@ public abstract class AbstractTransactionService
 
     public async Task RollbackAsync()
     {
-        await _db.Database.BeginTransactionAsync();
+        await _db.Database.RollbackTransactionAsync();
     }
 
 }

@@ -449,7 +449,8 @@ namespace PizzaDelivery.Persistence.Migrations
                 {
                     b.HasOne("PizzaDelivery.Domain.Models.Promocode", "Promocode")
                         .WithMany()
-                        .HasForeignKey("PromocodeId");
+                        .HasForeignKey("PromocodeId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("PizzaDelivery.Domain.Models.User.ApplicationUser", "User")
                         .WithMany("Orders")

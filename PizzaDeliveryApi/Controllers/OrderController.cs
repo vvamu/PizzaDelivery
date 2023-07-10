@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Newtonsoft.Json;
+using PizzaDelivery.Application.DTO;
 using PizzaDelivery.Application.Helpers;
 using PizzaDelivery.Application.Models;
 using PizzaDelivery.Application.Services.Interfaces;
@@ -63,7 +64,7 @@ public class OrdersController : ControllerBase
 
     [HttpGet("{orderId}", Name = "GetOrder")]
     [Authorize(Roles = "User,Admin")]
-    public async Task<ActionResult<Order>> GetOrder(Guid orderId)
+    public async Task<ActionResult<OrderDTO>> GetOrder(Guid orderId)
     {
         var order = await _context.GetAsync(orderId);
         return order == null ? BadRequest(ModelState) : Ok(order);
@@ -71,12 +72,12 @@ public class OrdersController : ControllerBase
 
     [HttpPost(Name = "CreateOrder")]
     [Authorize(Roles = "User")]
-    public async Task<ActionResult<Order>> Create(OrderCreationModel order)
+    public async Task<ActionResult<OrderDTO>> Create(OrderCreationModel order)
     {
         return Ok(await _context.CreateAsync(order));
     }
     [HttpPut("AddPromocode",Name = "AddPromocodeToOrder")]
-    public async Task<ActionResult<Order>> AddPromocodeToOrder(string promocodeValue, Guid orderId)
+    public async Task<ActionResult<OrderDTO>> AddPromocodeToOrder(string promocodeValue, Guid orderId)
     {
         var db_shoppingCart = await _context.AddPromocodeToOrder(promocodeValue,orderId);
         return db_shoppingCart == null ? BadRequest(db_shoppingCart) : Ok(db_shoppingCart);
