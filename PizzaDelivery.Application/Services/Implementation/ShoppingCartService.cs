@@ -21,6 +21,8 @@ public class ShoppingCartService : IShoppingCartService
     {
         get
         {
+            var user = _userManager.SupportsUserClaim;
+
             var username = _signInManager.Context.User.Identity.Name;
             var current_user = _userManager.Users.FirstOrDefault(x => x.UserName == username);
             return current_user == null ? throw new Exception("Unauthorized") : current_user;
@@ -101,7 +103,7 @@ public class ShoppingCartService : IShoppingCartService
     }
     public async Task<ShoppingCartItemDTO> UpdateItemInShoppingCartAsyncDTO(Guid pizzaId, int amount = 1)
     {
-        var item = UpdateItemInShoppingCartAsync(pizzaId, amount);
+        var item = await UpdateItemInShoppingCartAsync(pizzaId, amount);
         return _mapper.Map<ShoppingCartItemDTO>(item);
     }
 

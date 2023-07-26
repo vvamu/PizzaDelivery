@@ -1,8 +1,79 @@
 version: '3.4'
 
+
+
 services:
-  pizzadeliveryapi:
-    image: ${DOCKER_REGISTRY-}pizzadeliveryapi
+
+  pizzadelivery:
+    image: pizza-delivery-web
     build:
       context: .
-      dockerfile: PizzaDeliveryApi\Dockerfile
+      dockerfile: PizzaDelivery/PizzaDeliveryDockerfile
+    ports:
+      - "7003:7003"  # Map container port 80 to host port 3000
+      - "5021:5021"  # Map container port 80 to host port 3000
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:7003;http://+:5021
+    networks:   
+      - pizza-delivery-net
+    depends_on:
+      - postgres_db
+      - sql-server-db
+      
+  pizzadeliveryapi:
+    image: pizza-delivery-api
+    build:
+      context: .
+      dockerfile: PizzaDeliveryApi/PizzaDeliveryApiDockerfile
+    ports:
+      - "7278:7278"  
+      - "5201:5201"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:7278;http://+:5201
+    networks:
+      - pizza-delivery-net
+    depends_on:
+      - postgres_db
+      - sql-server-db
+
+  postgres_db:
+    container_name: postgres
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: qwerty
+      POSTGRES_DB: pizza-delivery-db
+    ports:
+      - "5432:5432"
+    networks:
+      - pizza-delivery-net
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  sql-server-db:
+    container_name: sql-server-db
+    image: mcr.microsoft.com/mssql/server:2017-latest
+    ports:
+      - "1433:1433"
+    environment:
+      SA_PASSWORD: qwerty1234A
+      ACCEPT_EULA: "Y"
+    networks:
+      - pizza-delivery-net
+    volumes:
+      - sql-server-data:/var/lib/mssql/data
+
+
+
+networks:
+  pizza-delivery-net:
+    name : pizza-delivery-net
+    driver: bridge
+
+volumes:
+  postgres-data:
+  sql-server-data:
+
+

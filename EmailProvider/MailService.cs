@@ -2,18 +2,14 @@
 using EmailProvider.Interfaces;
 using EmailProvider.Models;
 using EmailProvider.Options;
+using MailKit.Net.Smtp;
 using MailKit.Security;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using MimeKit;
-using System.Threading.Tasks;
-using MailKit.Net.Smtp;
 using System.IO;
-using PizzaDelivery.Application.Options;
-using PizzaDelivery.Domain.Models;
-using static System.Net.Mime.MediaTypeNames;
 using System.Text.RegularExpressions;
-using Microsoft.AspNetCore.Http;
-using System;
+using System.Threading.Tasks;
 
 namespace EmailProvider;
 
@@ -30,8 +26,8 @@ public class MailService : IMailService
         var email = await CreateMessage(mailrequest);
         var builder = new BodyBuilder();
 
-        if(mailrequest.File != null)
-        await AddFileToMessage(builder, mailrequest.File);
+        if (mailrequest.File != null)
+            await AddFileToMessage(builder, mailrequest.File);
 
         builder.TextBody = mailrequest.TextBody ?? "";
         builder.HtmlBody = mailrequest.HtmlBody ?? "";
@@ -43,12 +39,6 @@ public class MailService : IMailService
         smtp.Authenticate(_mailOptions.Email, _mailOptions.Password);
         await smtp.SendAsync(email);
         smtp.Disconnect(true);
-    }
-    public static void CheckMessage(Mailrequest mailrequest)
-    {
-        if (IsHtmlString(mailrequest.HtmlBody) || mailrequest.HtmlBody != null)
-            throw new System.Exception("Not correct html");
-        
     }
     public async Task<MimeMessage> CreateMessage(Mailrequest mailrequest)
     {
@@ -66,7 +56,7 @@ public class MailService : IMailService
         return email;
     }
 
-    public async Task AddFileToMessage(BodyBuilder builder,IFormFile file)
+    private async Task AddFileToMessage(BodyBuilder builder, IFormFile file)
     {
         var fileExtension = Path.GetExtension(file.FileName);
 
@@ -88,7 +78,11 @@ public class MailService : IMailService
         Task.CompletedTask.Wait();
 
     }
-
+    private static void CheckMessage(Mailrequest mailrequest)
+    {
+        if (IsHtmlString(mailrequest.HtmlBody) && mailrequest.HtmlBody != null)
+            throw new System.Exception("Not correct html");
+    }
     private static bool IsHtmlString(string input)
     {
         string pattern = @"<[^>]+?>";

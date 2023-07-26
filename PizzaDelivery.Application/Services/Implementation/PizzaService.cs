@@ -13,6 +13,7 @@ using PizzaDelivery.Application.Services.Interfaces;
 using AutoMapper;
 using PizzaDelivery.Domain.Validators;
 using FluentValidation;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace PizzaDelivery.Application.Services.Implementation;
 
@@ -91,19 +92,24 @@ public class PizzaService : AbstractTransactionService, IPizzaService
     {
         var db_item = await _context.Pizzas.FirstOrDefaultAsync(x => x.Id == id);
         if (db_item == null) throw new KeyNotFoundException();
-        await BeginTransactionAsync();
-        try
+        var executionStrategy = CreateExecutionStrategy();
+        EntityEntry<Pizza>? remotedItem = null;
+        await executionStrategy.ExecuteAsync(async () =>
         {
-            File.Delete(db_item.ImagePath);
-        }
-        catch (Exception ex)
-        {
-            await RollbackAsync();
-            throw new Exception("Failed to delete image", ex);
-        }
-        var remotedItem = _context.Pizzas.Remove(db_item);
-        await _context.SaveChangesAsync();
-        await CommitAsync();
+            await using var transaction = await BeginTransactionAsync();
+            try
+            {
+                File.Delete(db_item.ImagePath);
+            }
+            catch (Exception ex)
+            {
+                await RollbackAsync(transaction);
+                throw new Exception("Failed to delete image", ex);
+            }
+            remotedItem = _context.Pizzas.Remove(db_item);
+            await _context.SaveChangesAsync();
+            await CommitAsync(transaction);
+        });
         return remotedItem.Entity;
     }
     public async Task SaveChangesAsync()
@@ -119,17 +125,12 @@ public class PizzaService : AbstractTransactionService, IPizzaService
             var fileExtension = Path.GetExtension(image.FileName);
             if (fileExtension == ".jpg" || fileExtension == ".jpeg" || fileExtension == ".png" || fileExtension == ".gif")
             {
-
                 string currentDirectory = Directory.GetCurrentDirectory();
                 string parentDirectory = Directory.GetParent(currentDirectory).FullName;
 
                 var localPath = "\\PizzaDelivery.Domain\\Images\\";
                 string fileName = pizza.Name + fileExtension;
-                string filePath = Path.Combine(parentDirectory, localPath, fileName);
-                if (!filePath.Contains(parentDirectory))
-                {
-                    filePath = parentDirectory + localPath + fileName;
-                }
+                string filePath = parentDirectory + localPath + fileName;
 
                 using (var fileStream = new FileStream(filePath, FileMode.Create))
                 {

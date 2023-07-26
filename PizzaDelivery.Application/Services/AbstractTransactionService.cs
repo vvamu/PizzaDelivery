@@ -1,4 +1,6 @@
-﻿namespace PizzaDelivery.Application.Services;
+﻿using Microsoft.EntityFrameworkCore.Storage;
+
+namespace PizzaDelivery.Application.Services;
 public abstract class AbstractTransactionService
 {
     private readonly ApplicationDbContext _db;
@@ -6,19 +8,23 @@ public abstract class AbstractTransactionService
     {
         _db = db;
     }
-    public async Task BeginTransactionAsync()
+    public IExecutionStrategy CreateExecutionStrategy()
     {
-        await _db.Database.BeginTransactionAsync();
+        return _db.Database.CreateExecutionStrategy();
+    }
+    public async Task<IDbContextTransaction> BeginTransactionAsync()
+    {
+        return await _db.Database.BeginTransactionAsync();
     }
 
-    public async Task CommitAsync()
+    public async Task CommitAsync(IDbContextTransaction transaction)
     {
-        await _db.Database.CommitTransactionAsync();
+        await transaction.CommitAsync();
     }
 
-    public async Task RollbackAsync()
+    public async Task RollbackAsync(IDbContextTransaction transaction)
     {
-        await _db.Database.RollbackTransactionAsync();
+        await transaction.RollbackAsync();
     }
 
 }

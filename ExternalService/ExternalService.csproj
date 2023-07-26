@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PizzaDelivery.Application\PizzaDelivery.Application.csproj" />
+    <ProjectReference Include="..\PizzaDelivery.Domain\PizzaDelivery.Domain.csproj" />
+    <ProjectReference Include="..\PizzaDelivery.Persistence\PizzaDelivery.Persistence.csproj" />
+  </ItemGroup>
+
+</Project>

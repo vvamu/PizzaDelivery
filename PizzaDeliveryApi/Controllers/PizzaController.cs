@@ -48,7 +48,7 @@ public class PizzaController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<Pizza>> GetOne([FromForm] Guid id)
+    public async Task<ActionResult<Pizza>> GetOne(Guid id)
     {
         var pizza = await _context.GetAsync(id);
         if (pizza == null) return BadRequest(ModelState);

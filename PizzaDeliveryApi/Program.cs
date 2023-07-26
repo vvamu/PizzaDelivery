@@ -15,6 +15,10 @@ using PizzaDeliveryApi.Controllers;
 using EmailProvider.Options;
 using EmailProvider.Interfaces;
 using EmailProvider;
+using GoogleProvider.Options;
+using GoogleProvider.Interfaces;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using PizzaDelivery.Persistence;
 //using MailKit;
 
 #region Logging
@@ -45,18 +49,31 @@ builder.Services.AddControllersWithViews().
     options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
 );
 
+#region Options pattern 
+builder.Services.AddSingleton(configuration);
+services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.OptionName));
+services.Configure<AdminOptions>(configuration.GetSection(AdminOptions.OptionName));
+services.Configure<ConnectionStringsOptions>(configuration.GetSection(ConnectionStringsOptions.OptionName));
+services.Configure<MailOptions>(configuration.GetSection(MailOptions.OptionName));
+services.Configure<GoogleOptions>(configuration.GetSection(MailOptions.OptionName));
+#endregion
 #region DBConfig
-var connectionString = builder.Configuration.GetConnectionString("SqliteConnection");
+var connectionString = builder.Configuration.GetConnectionString("SqlServer");
+
 builder.Services.AddDbContext<PizzaDelivery.Persistence.ApplicationDbContext>(
     options => {
-        options.UseSqlite(connectionString);
+        //options.UseNpgsql(connectionString);
+        options.UseSqlServer(connectionString, builder =>
+        {
+            builder.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
+        });
         options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
         options.EnableSensitiveDataLogging();
     });
 #endregion
 
 #region Own Services
-services.AddSingleton<IWebHostEnvironment>(provider => (IWebHostEnvironment)provider.GetRequiredService<Microsoft.AspNetCore.Hosting.IHostingEnvironment>());
+//services.AddSingleton<IWebHostEnvironment>(provider => (IWebHostEnvironment)provider.GetRequiredService<Microsoft.AspNetCore.Hosting.IHostingEnvironment>());
 
 builder.Services.AddTransient<IPizzaService, PizzaService>();
 builder.Services.AddTransient<IPromocodeService, PromocodeService>();
@@ -70,6 +87,7 @@ builder.Services.Configure<PasswordHasherOptions>(options =>
     options.CompatibilityMode = PasswordHasherCompatibilityMode.IdentityV2);
 
 services.AddTransient<IMailService, MailService>();
+services.AddTransient<IExternalProvider, GoogleProvider.ExternalProvider>();
 
 
 #endregion
@@ -79,7 +97,20 @@ builder.Services.AddIdentity<PizzaDelivery.Domain.Models.User.ApplicationUser, I
     .AddEntityFrameworkStores<PizzaDelivery.Persistence.ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-builder.Services.AddAuthentication();/* (options =>
+builder.Services.AddAuthentication(options=>
+                {
+                    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                })
+                .AddCookie(options =>
+                {
+                    options.LoginPath = "/external/google-login";
+                })
+                .AddGoogle(options =>
+                 {
+                     options.ClientId = builder.Configuration.GetSection("GoogleOath:ClientId").Value;
+                     options.ClientSecret = builder.Configuration.GetSection("GoogleOath:ClientSecret").Value;
+                 });
+/* (options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -118,13 +149,6 @@ builder.Services.AddAuthorization(options =>
 #endregion
 
 
-#region Options pattern 
-builder.Services.AddSingleton(configuration);
-services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.OptionName));
-services.Configure<AdminOptions>(configuration.GetSection(AdminOptions.OptionName));
-services.Configure<ConnectionStringsOptions>(configuration.GetSection(ConnectionStringsOptions.OptionName));
-services.Configure<MailOptions>(configuration.GetSection(MailOptions.OptionName));
-#endregion
 
 
 services.AddHostedService<RepeatingService>();

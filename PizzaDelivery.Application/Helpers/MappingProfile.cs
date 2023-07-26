@@ -10,22 +10,24 @@ public class MappingProfile : Profile
 {
     public MappingProfile()
     {
-        CreateMap<IdentityUser, ApplicationUser>()
+        CreateMap<IdentityUser, ApplicationUser>().ReverseMap()
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
-        CreateMap<UserRegister, ApplicationUser>()
+        CreateMap<UserRegister, ApplicationUser>().ReverseMap()
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
-        CreateMap<UserLogin, ApplicationUser>()
+        CreateMap<UserLogin, ApplicationUser>().ReverseMap()
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
-        CreateMap<ShoppingCart, ShoppingCartDTO>()
+        CreateMap<ShoppingCart, ShoppingCartDTO>().ReverseMap()
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
-        CreateMap<ShoppingCartItem, ShoppingCartItemDTO>()
+        CreateMap<ShoppingCartItem, ShoppingCartItemDTO>().ReverseMap()
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
-        CreateMap<ApplicationUser, UserDTO>()
-                .ForMember(dest => dest.Password, opt => opt.MapFrom(src => src.OwnHashedPassword));
-        CreateMap<Order, OrderDTO>()
-           .ForMember(dest => dest.OrderItems, opt => opt.MapFrom(src => GetOrderItemsString(src.OrderItems)))
+        CreateMap<ShoppingCartItem, OrderItem>().ReverseMap().ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+        CreateMap<PizzaCreateModel, Pizza>().ReverseMap().ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+        CreateMap<ApplicationUser, UserDTO>().ReverseMap().ForMember(dest => dest.OwnHashedPassword, opt => opt.MapFrom(src => src.Password));
+        CreateMap<OrderCreationModel, Order>().ReverseMap().ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+        CreateMap<PromocodeCreateModel, Promocode>().ReverseMap().ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+        CreateMap<Order, OrderDTO>().ReverseMap()
+            .ForMember(dest => dest.OrderItems, opt => opt.MapFrom(src => GetOrderItemsString(src.OrderItems)))
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
-
 
     }
     private static string GetOrderItemsString(ICollection<OrderItem> orderItems)

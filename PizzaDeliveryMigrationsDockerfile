@@ -1,0 +1,19 @@
+# Use the same base image with SDK for migrations
+FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
+WORKDIR /src
+
+# Copy the main project and the library containing migrations
+COPY PizzaDelivery.Persistence/*.csproj PizzaDelivery.Persistence/
+COPY PizzaDeliveryApi/*.csproj PizzaDeliveryApi/
+
+# Restore NuGet packages
+RUN dotnet restore "PizzaDelivery.Persistence"
+
+# Copy the rest of the application code
+COPY . .
+
+# Change working directory to the folder containing the migrations library
+WORKDIR "/src/PizzaDelivery.Persistence"
+
+# Apply migrations
+ENTRYPOINT ["dotnet", "ef", "database", "update"]

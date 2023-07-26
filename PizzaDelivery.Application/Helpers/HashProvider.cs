@@ -2,7 +2,6 @@
 using System.Text;
 
 namespace PizzaDelivery.Application.Helpers;
-
 public static class HashProvider
 {
     public static string ComputeHash(string input)
@@ -21,6 +20,7 @@ public static class HashProvider
             {
                 builder.Append(hashBytes[i].ToString("x2"));
             }
+            var res = builder.ToString();
 
             return builder.ToString();
         }

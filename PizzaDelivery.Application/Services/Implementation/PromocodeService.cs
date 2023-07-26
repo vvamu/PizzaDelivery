@@ -49,12 +49,14 @@ public class PromocodeService : IPromocodeService
             throw new Exception(errorsString);
         }
 
+
         var promocode = new Promocode()
         {
             Value = item.Value,
             ExpireDate = item.ExpireDate,
             SalePercent = item.SalePercent,
         };
+        promocode = _mapper.Map<Promocode>(item);
         await _context.Promocodes.AddAsync(promocode);
         await _context.SaveChangesAsync();
         var db_item = await _context.Promocodes.FindAsync(promocode.Id);

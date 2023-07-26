@@ -1,6 +1,6 @@
 ﻿@using Microsoft.AspNetCore.Identity
-@inject SignInManager<IdentityUser> SignInManager
-@inject UserManager<IdentityUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
 
 <ul class="navbar-nav">
 @if (SignInManager.IsSignedIn(User))
@@ -10,7 +10,7 @@
     </li>
     <li class="nav-item">
         <form  class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
-            <button  type="submit" class="nav-link btn btn-link text-dark">Logout</button>
+                <button type="submit" class="nav-link btn btn-link text-dark" asp-action="Logout" asp-controller="Home">Logout</button>
         </form>
     </li>
 }
@@ -21,6 +21,12 @@ else
     </li>
     <li class="nav-item">
         <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Login">Login</a>
+    </li>
+        <li class="nav-item">
+            <a class="nav-link text-dark" asp-route-provider="Google" asp-action="ExternalLogin" asp-controller="Home">Login google</a>
+            <a class="nav-link text-dark" asp-route-provider="Facebook" asp-action="ExternalLogin" asp-controller="Home">Login facebook</a>
+            <a class="nav-link text-dark" asp-route-provider="Vkontakte" asp-action="ExternalLoginVk" asp-controller="Home">Login vkontakte</a>
+
     </li>
 }
 </ul>

@@ -20,6 +20,8 @@ using AutoMapper;
 using PizzaDelivery.Domain.Validators;
 using System.ComponentModel.DataAnnotations;
 using DocumentFormat.OpenXml.Spreadsheet;
+using PizzaDelivery.Models.Interfaces;
+using PizzaDelivery.Application.DTO;
 
 namespace PizzaDelivery.Application.Services.Implementation;
 
@@ -43,7 +45,18 @@ public class AuthService : IAuthService
         _adminOptions = adminOptions.Value;
         _mapper = mapper;
     }
-
+    public ApplicationUser GetCurrentUser()
+    {
+        var username = _signInManager.Context.User.Identity.Name;
+        var user = _signInManager.Context;
+        var users = _userManager.Users;
+        var userDTO = GetCurrentUserInfo();
+        var countUsers = users.Count();
+        var currentUser = _context.Users.Include(x => x.Orders).Include(x => x.ExternalConnections).FirstOrDefault(x => x.UserName == username);
+        if (currentUser == null)
+            currentUser = _userManager.Users.FirstOrDefault(x => x.UserName == username);
+        return currentUser;
+    }
     public PagedList<UserDTO> GetAllAsync(QueryStringParameters queryStringParameters)
     {
         var items = _userManager.Users;
@@ -53,9 +66,10 @@ public class AuthService : IAuthService
     public async Task<ICollection<ApplicationUser>> GetAllAsync()
     {
         return await _userManager.Users.ToListAsync();
+       
     }
 
-    public async Task<UserDTO> LoginAsync(UserLogin user)
+    public async Task<UserDTO> LoginByEmailAsync(UserLogin user)
     {
         await CreateAdmin();
         var validator = new UserLoginValidator();
@@ -83,6 +97,77 @@ public class AuthService : IAuthService
 
         return dbUserDTO;
     }
+
+    #region External
+    public async Task<ApplicationUser> ExternalLogin(string provider, ExternalUser extUser)
+    {
+        var externalCollections = await _context.Users.SelectMany(x => x.ExternalConnections).ToListAsync();
+        var externalUser = externalCollections.FirstOrDefault(x => x.ProviderUserId == extUser.Id);
+        ApplicationUser? user = null;
+        if (externalUser != null)
+        {
+            user = await _userManager.FindByIdAsync(externalUser.UserId) ?? throw new Exception("User not fount");
+        }
+        else
+        {
+            user = new ApplicationUser
+            {
+                UserName = user.UserName ?? user.Id,
+                Email = user.Email ?? user.Id + "@example.com",
+                OwnHashedPassword = PizzaDelivery.Application.Helpers.HashProvider.ComputeHash("default"),
+            };
+
+            await _context.Users.AddAsync(user);
+            await _context.SaveChangesAsync();
+            externalUser = await AddToUserExternalConnection(user.Id, provider, user.Id);
+            user.ExternalConnections.Add(externalUser);
+
+            await _userManager.AddToRoleAsync(user, "User");
+
+        }
+        await _context.SaveChangesAsync();
+        user = await _context.Users.Include(x => x.ExternalConnections).
+            FirstOrDefaultAsync(x => x.Id == user.Id);
+
+
+        await _signInManager.SignInAsync(user, false);
+        await _context.SaveChangesAsync();
+
+
+        return user;
+    }
+
+
+    public async Task<ExternalConnection> AddToUserExternalConnection(string userId, string provider, string externalUserId)
+    {
+
+        var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId) ?? throw new Exception("User not found");
+
+        var externalCollections = await _context.Users.SelectMany(x => x.ExternalConnections).ToListAsync();
+        var externalUser = externalCollections.FirstOrDefault(x => x.ProviderUserId == externalUserId) ??
+            throw new Exception("Account was connected to other user");
+
+        var externalUserConnection = user.ExternalConnections.FirstOrDefault(x => x.Provider == provider);
+        if (externalUserConnection != null)
+        {
+            externalUserConnection.ProviderUserId = externalUserId;
+        }
+        else
+        {
+            externalUserConnection = new ExternalConnection()
+            {
+                Provider = provider,
+                ProviderUserId = externalUserId,
+                UserId = userId,
+            };
+            _context.ExternalConnections.Add(externalUserConnection);
+        }
+        return externalUserConnection;
+
+    }
+    #endregion
+
+
     public async Task<UserDTO> LogoutAsync()
     {
         var username = _signInManager.Context.User.Identity.Name;
@@ -120,9 +205,20 @@ public class AuthService : IAuthService
 
         var applicationUser = _mapper.Map<ApplicationUser>(user);
         applicationUser.OwnHashedPassword = hashedPassword;
+        
 
-        var result = await _userManager.CreateAsync(applicationUser, user.Password.Trim());
-        if (!result.Succeeded) throw new Exception(result.Errors.FirstOrDefault().Description);
+        try
+        {
+
+            var result = await _userManager.CreateAsync(applicationUser, user.Password.Trim());
+            if (!result.Succeeded) throw new Exception(result.Errors.FirstOrDefault().Description);
+        }
+        catch
+        {
+            await _context.Users.AddAsync(applicationUser);
+        }
+
+       
         await _context.SaveChangesAsync();
 
         var shoppingCart = new ShoppingCart() { User = applicationUser };
@@ -177,7 +273,13 @@ public class AuthService : IAuthService
         var adminPassword = _adminOptions.Password;
 
         var result = await _userManager.FindByEmailAsync(adminEmail);
-        if (result != null) return;
+        try
+        {
+            var resRole = await _userManager.AddToRoleAsync(result, "Admin");
+
+        }
+        catch { }
+            if (result != null) return;
 
         var adminNew = new UserRegister()
         {
@@ -186,7 +288,6 @@ public class AuthService : IAuthService
             Password = adminPassword
         };
         var dbUser = _mapper.Map<ApplicationUser>(await RegisterAsync(adminNew));
-        var resRole = await _userManager.AddToRoleAsync(dbUser, "Admin");
         //var resRole = await _userManager.AddClaimAsync(result, new Claim(ClaimTypes.Role,"Admin"));
         await _context.SaveChangesAsync();
     }

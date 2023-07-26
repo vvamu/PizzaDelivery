@@ -1,0 +1,58 @@
+﻿@using ExternalProvider.Models;
+@model Tuple<List<VkontakteUser>,List<VkontakteUser>>
+@{
+    ViewData["Title"] = "Home Page";
+
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn this.</p>
+    <a class="text-center" asp-action="GetOnlineFriends">Get online friends</a>
+
+</div>
+
+<div class="row">
+    @if (Model.Item1.Count >= 0)
+    {
+        @foreach (var item in Model.Item1)
+        {
+            <div class="row row-cols-1 col-md-4 text-center">
+                <div class="col" style="padding: 10px;">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">@item.First_Name @item.Last_Name</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div>Emply list of the friends</div>
+    }
+</div>
+
+<h2>Online friends</h2>
+<div class="row">
+    @if (Model.Item2.Count >= 0)
+    {
+        @foreach (var item in Model.Item2)
+        {
+            <div class="row row-cols-1 col-md-4 text-center">
+                <div class="col" style="padding: 10px;">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">@item.First_Name @item.Last_Name</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div>Emply list of the friends</div>
+    }
+</div>

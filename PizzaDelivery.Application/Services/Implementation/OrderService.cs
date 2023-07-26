@@ -84,42 +84,48 @@ public class OrderService : AbstractTransactionService, IOrderService
         var totalPrice = dbShoppingCart.TotalPrice;
         if (totalPrice == 0) throw new Exception("Add items to create order");
 
-        var correctItem = _mapper.Map<Order>(item);
-        correctItem.TotalPrice = totalPrice;
-        correctItem.UserId = CurrentUser.Id;
+        var correctOrder = _mapper.Map<Order>(item);
+        correctOrder.TotalPrice = totalPrice;
+        correctOrder.UserId = CurrentUser.Id;
 
-        await BeginTransactionAsync();
-        try
+        var executionStrategy = CreateExecutionStrategy();
+        await executionStrategy.ExecuteAsync(async () =>
         {
-            await _context.Orders.AddAsync(correctItem);
-            await _context.SaveChangesAsync();
-
-            var shoppingCart = await _context.ShoppingCart.Include(x => x.User).FirstOrDefaultAsync(x => x.UserId == CurrentUser.Id);
-
-
-            if (shoppingCart != null)
+            await using var transaction = await BeginTransactionAsync();
+            try
             {
-                var cartItems = await _context.ShoopingCartPizzas
-                    .Where(x => x.ShoppingCartId == shoppingCart.Id)
-                    .ToListAsync();
-                List<OrderItem> orderItems = new();
-                foreach (var cartItem in cartItems)
+                await _context.Orders.AddAsync(correctOrder);
+                await _context.SaveChangesAsync();
+
+                var shoppingCart = await _context.ShoppingCart.Include(x => x.User).FirstOrDefaultAsync(x => x.UserId == CurrentUser.Id);
+
+
+                if (shoppingCart != null)
                 {
-                    var orderItem = _mapper.Map<OrderItem>(cartItem);
-                    orderItem.OrderId = correctItem.Id;
+                    var cartItems = await _context.ShoopingCartPizzas
+                        .Where(x => x.ShoppingCartId == shoppingCart.Id)
+                        .ToListAsync();
+                    List<OrderItem> orderItems = new();
+                    foreach (var cartItem in cartItems)
+                    {
+                        var orderItem = _mapper.Map<OrderItem>(cartItem);
+                        orderItem.OrderId = correctOrder.Id;
 
-                    orderItems.Add(orderItem);
-                    correctItem.OrderItems.Add(orderItem);
+                        orderItems.Add(orderItem);
+                        correctOrder.OrderItems.Add(orderItem);
+                    }
+
+                    await _context.OrderItems.AddRangeAsync(orderItems);
+                    _context.ShoopingCartPizzas.RemoveRange(cartItems);
                 }
-                await _context.OrderItems.AddRangeAsync(orderItems);
-                _context.ShoopingCartPizzas.RemoveRange(cartItems);
+                await _context.SaveChangesAsync();
             }
-            await _context.SaveChangesAsync();
-        }
-        catch(Exception ex) {await RollbackAsync(); }
-        await CommitAsync();
+            catch (Exception ex) { await RollbackAsync(transaction); }
+            await CommitAsync(transaction);
 
-        return _mapper.Map<OrderDTO>(correctItem);
+        });
+
+        return _mapper.Map<OrderDTO>(correctOrder);
     }
     public async Task<ICollection<OrderItem>> GetAllOrderItems()
     {

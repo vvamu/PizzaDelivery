@@ -11,7 +11,6 @@ public class ApplicationDbContext : IdentityDbContext<Domain.Models.User.Applica
         : base(options)
     {
     }
-    
     protected override void OnModelCreating(ModelBuilder builder)
     {
         builder.ApplyConfiguration(new OrderConfiguration());
@@ -23,6 +22,7 @@ public class ApplicationDbContext : IdentityDbContext<Domain.Models.User.Applica
     public DbSet<ShoppingCartItem> ShoopingCartPizzas { get; set; }
     public DbSet<OrderItem> OrderItems { get; set; }
     public DbSet<ShoppingCart> ShoppingCart { get; set; }
+    public DbSet<ExternalConnection> ExternalConnections { get; set; }
 
 
 

@@ -17,7 +17,7 @@ namespace PizzaDelivery.Application.DTO;
 public class OrderDTO : BaseModel
 {
     public decimal TotalPrice { get; set; }
-    public string OrderItems { get; set; }
+    public ICollection<OrderItem> OrderItems { get; set; }
 
 
     [DisplayName("Order Date")]

@@ -1,0 +1,38 @@
+# Set the base image for the build stage
+FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
+WORKDIR /src
+
+RUN dotnet dev-certs https --clean
+RUN dotnet dev-certs https --trust
+
+# Copy and restore project files
+COPY ["PizzaDelivery/PizzaDelivery.csproj", "PizzaDelivery/"]
+COPY ["ExternalService/ExternalService.csproj", "ExternalService/"]
+COPY ["PizzaDelivery.Application/PizzaDelivery.Application.csproj", "PizzaDelivery.Application/"]
+COPY ["PizzaDelivery.Domain/PizzaDelivery.Domain.csproj", "PizzaDelivery.Domain/"]
+COPY ["PizzaDelivery.Persistence/PizzaDelivery.Persistence.csproj", "PizzaDelivery.Persistence/"]
+
+RUN dotnet restore "PizzaDelivery/PizzaDelivery.csproj"
+COPY . .
+
+# Build the project
+WORKDIR "/src/PizzaDelivery"
+RUN dotnet build "PizzaDelivery.csproj" -c Release -o /app/build
+
+# Publish the project
+RUN dotnet publish "PizzaDelivery.csproj" -c Release -o /app/publish --self-contained
+
+# Set the base image for the final stage
+FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS final
+WORKDIR /app
+
+# Copy published files and certificates from the build stage
+COPY --from=build /app/publish .
+COPY PizzaDelivery/Properties/cert.pem /app/cert.pem
+COPY PizzaDelivery/Properties/key.pem /app/key.pem
+COPY asp-cert.pfx /app/asp-cert.pfx
+
+ENV ASPNETCORE_Kestrel__Certificates__Default__Password="hope"
+ENV ASPNETCORE_Kestrel__Certificates__Default__Path="/app/asp-cert.pfx"
+
+ENTRYPOINT ["dotnet", "PizzaDelivery.dll", "--urls", "https://+:7003;http://+:5021"]
