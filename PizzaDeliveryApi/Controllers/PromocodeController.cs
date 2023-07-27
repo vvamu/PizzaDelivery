@@ -46,8 +46,7 @@ public class PromocodeController : ControllerBase
     public async Task<ActionResult<Promocode>> GetOneAsync(Guid id)
     {
         var promocode = await _context.GetAsync(id);
-        if (promocode == null) return BadRequest(ModelState);
-        return Ok(promocode);
+        return promocode == null ?? BadRequest(ModelState) : Ok(promocode);
     }
 
     [HttpPost(Name = "CreatePromocodeAsync")]
@@ -60,15 +59,13 @@ public class PromocodeController : ControllerBase
     public async Task<ActionResult<Promocode>> DeleteAsync(Guid id)
     {
         var result = await _context.DeleteAsync(id);
-        if (result == null) return BadRequest(ModelState);
-        return Ok(result);
+        return result == null ?? BadRequest(ModelState) : Ok(result);
     }
 
     [HttpPut(Name = "UpdatePromocodeAsync")]
     public async Task<ActionResult<Promocode>> PutAsync(Promocode promocode)
     {
         var result = await _context.UpdateAsync(promocode);
-        if (result == null) return BadRequest(ModelState);
-        return Ok(result);
+        return result == null ?? BadRequest(ModelState) : Ok(result);
     }
 }

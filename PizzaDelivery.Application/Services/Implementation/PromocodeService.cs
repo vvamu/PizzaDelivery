@@ -49,16 +49,17 @@ public class PromocodeService : IPromocodeService
             throw new Exception(errorsString);
         }
 
-
         var promocode = new Promocode()
         {
             Value = item.Value,
             ExpireDate = item.ExpireDate,
             SalePercent = item.SalePercent,
-        };
-        promocode = _mapper.Map<Promocode>(item);
+        } ?? _mapper.Map<Promocode>(item);
+
         await _context.Promocodes.AddAsync(promocode);
         await _context.SaveChangesAsync();
+        var items = _context.Promocodes.ToList();
+       
         var db_item = await _context.Promocodes.FindAsync(promocode.Id);
         return db_item == null ? throw new NotImplementedException() : db_item;
     }

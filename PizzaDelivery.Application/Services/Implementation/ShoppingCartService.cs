@@ -80,7 +80,7 @@ public class ShoppingCartService : IShoppingCartService
     public async Task<ShoppingCartItemDTO> RemoveOneFromShoppingCartAsyncDTO(Guid shoppingCartItemId)
     {
 
-        var item = RemoveOneFromShoppingCartAsync(shoppingCartItemId);
+        var item = await RemoveOneFromShoppingCartAsync(shoppingCartItemId);
         return _mapper.Map<ShoppingCartItemDTO>(item);
     }
 

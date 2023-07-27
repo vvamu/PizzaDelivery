@@ -13,6 +13,8 @@ using ExternalProvider.Models;
 using DocumentFormat.OpenXml.InkML;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Azure.Core;
+using Newtonsoft.Json.Linq;
 
 namespace GoogleProvider;
 
@@ -41,14 +43,16 @@ public class ExternalProvider : IExternalProvider
         //return Redire(authorizationUrl);
     }
 
-    public ApplicationUser GetCurrentUser()
+    public async Task<string> GetCurrentUserId(string accessToken)
     {
-        var username = _signInManager.Context.User.Identity.Name;
-        var user = _signInManager.Context;
-        var currentUser = _db.Users.Include(x => x.Orders).Include(x => x.ExternalConnections).FirstOrDefault(x => x.UserName == username);
-        if (currentUser == null)
-            currentUser = _userManager.Users.FirstOrDefault(x => x.UserName == username);
-        return currentUser;
+        var httpClient = new HttpClient();
+        var getUserDetailsUrl = $"https://api.vk.com/method/users.get?access_token={accessToken}&v=5.131";
+        var getUserDetailsResponse = await httpClient.GetAsync(getUserDetailsUrl);
+        var getUserDetailsContent = await getUserDetailsResponse.Content.ReadAsStringAsync();
+        var getUserDetailsJsonResponse = JObject.Parse(getUserDetailsContent);
+        var vkUser = getUserDetailsJsonResponse["response"].ToObject<List<VkontakteUser>>();
+        var numericUserId = vkUser[0].Id;
+        return numericUserId;
     }
     public async Task<AuthenticationProperties> ConfigureExternalAuthenticationProperties(string provider, string redirectUrl)
     {

@@ -197,12 +197,6 @@ using (var scope = app.Services.CreateScope())
             await roleManager.CreateAsync(new IdentityRole(roleName));
         }
     }
-
-
-    //var userManager = scope.ServiceProvider.GetRequiredService<SignInManager<ApplicationUser>>();
-    //var authService =
-    //var admin = userManager.UserManager.FindByEmailAsync("admin@service.com") ?? userManager;
-
 }
 #endregion
 

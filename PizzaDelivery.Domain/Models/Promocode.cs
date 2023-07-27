@@ -10,6 +10,6 @@ public class Promocode : BaseModel
     public string Value { get; set; }
     public int SalePercent { get; set; }
     public DateTime ExpireDate { get; set; }
-    public bool Expired { get; set; } = false;
+    public bool? Expired { get; set; } = false;
 
 }

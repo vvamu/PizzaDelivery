@@ -30,7 +30,7 @@ WORKDIR /app
 COPY --from=build /app/publish .
 COPY PizzaDelivery/Properties/cert.pem /app/cert.pem
 COPY PizzaDelivery/Properties/key.pem /app/key.pem
-COPY asp-cert.pfx /app/asp-cert.pfx
+COPY PizzaDelivery/asp-cert.pfx /app/asp-cert.pfx
 
 ENV ASPNETCORE_Kestrel__Certificates__Default__Password="hope"
 ENV ASPNETCORE_Kestrel__Certificates__Default__Path="/app/asp-cert.pfx"

@@ -9,7 +9,7 @@ namespace GoogleProvider.Interfaces;
 
 public interface IExternalProvider
 {
-    public ApplicationUser GetCurrentUser();
+    public Task<string> GetCurrentUserId(string accessToken);
     public Task<ICollection<AuthenticationScheme>> GetExternalAuthenticationSchemes();
     public Task<ApplicationUser> ExternalLoginCallback(string returnUrl = null, string remoteError = null);
     public Task<AuthenticationProperties> ConfigureExternalAuthenticationProperties(string provider, string redirectUrl);

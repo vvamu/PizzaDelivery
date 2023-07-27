@@ -177,16 +177,21 @@ public class HomeController : Controller
                 var friendDetailsJsonResponse = JObject.Parse(friendDetailsContent);
                 var friendDetails = friendDetailsJsonResponse["response"].ToObject<List<VkontakteUser>>();
 
-                var userId = _authService.GetCurrentUser().ExternalConnections.FirstOrDefault(x=>x.Provider == "Vkontakte").ProviderUserId;
 
-                //var userId = _externalProvider.GetCurrentUser().ExternalConnections.FirstOrDefault(x=>x.Provider == "Vkontakte").ProviderUserId;
+
+                var userId = _externalProvider.GetCurrentUserId(accessToken);
+
+                // Now, use the numericUserId in the friends.getOnline API request
                 var friendOnlineDetailsUrl = $"https://api.vk.com/method/friends.getOnline?user_id={userId}&access_token={accessToken}&v=5.131";
-                var friendOnlineDetailsResponse = await httpClient.GetAsync(friendDetailsUrl);
-                var friendOnlineDetailsContent = await friendDetailsResponse.Content.ReadAsStringAsync();
-                var friendOnlineDetailsJsonResponse = JObject.Parse(friendDetailsContent);
-                var friendOnlineDetails = friendDetailsJsonResponse["response"].ToObject<List<VkontakteUser>>();
+                var friendOnlineDetailsResponse = await httpClient.GetAsync(friendOnlineDetailsUrl);
+                var friendOnlineDetailsContent = await friendOnlineDetailsResponse.Content.ReadAsStringAsync();
+                var friendOnlineDetailsJsonResponse = JObject.Parse(friendOnlineDetailsContent);
+                var friendOnlineDetails = friendOnlineDetailsJsonResponse["response"].ToObject<List<VkontakteUser>>();
 
-                return View("OnlineFriends", (friendDetails, friendOnlineDetails));
+                var model = new Tuple<List<VkontakteUser>, List<VkontakteUser>>(friendDetails, friendOnlineDetails);
+
+
+                return View("OnlineFriends", model);
             }
             catch(Exception ex)
             {

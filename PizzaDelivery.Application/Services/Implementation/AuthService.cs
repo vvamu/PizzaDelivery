@@ -83,7 +83,7 @@ public class AuthService : IAuthService
         }
 
         var users = await _userManager.Users.ToListAsync();
-        var dbUser = await _userManager.FindByEmailAsync(user.Email);
+        var dbUser = await _userManager.FindByEmailAsync(user.Email) ?? await _context.Users.FirstOrDefaultAsync(x => x.Email == user.Email);
         if (dbUser == null) throw new Exception("Not user with such email");
 
 
@@ -112,8 +112,8 @@ public class AuthService : IAuthService
         {
             user = new ApplicationUser
             {
-                UserName = user.UserName ?? user.Id,
-                Email = user.Email ?? user.Id + "@example.com",
+                UserName = extUser.First_Name ?? user.Id,
+                Email = extUser.Email ?? extUser.Id + "@example.com",
                 OwnHashedPassword = PizzaDelivery.Application.Helpers.HashProvider.ComputeHash("default"),
             };
 
@@ -144,8 +144,8 @@ public class AuthService : IAuthService
         var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId) ?? throw new Exception("User not found");
 
         var externalCollections = await _context.Users.SelectMany(x => x.ExternalConnections).ToListAsync();
-        var externalUser = externalCollections.FirstOrDefault(x => x.ProviderUserId == externalUserId) ??
-            throw new Exception("Account was connected to other user");
+        //var externalUser = externalCollections.FirstOrDefault(x => x.ProviderUserId == externalUserId) ??
+          //  throw new Exception("Account was connected to other user");
 
         var externalUserConnection = user.ExternalConnections.FirstOrDefault(x => x.Provider == provider);
         if (externalUserConnection != null)
@@ -198,8 +198,12 @@ public class AuthService : IAuthService
             throw new Exception(errorsString);
         }
 
-        var dbUser = await _userManager.FindByEmailAsync(user.Email);
+        //var dbUser = await _userManager.FindByEmailAsync(user.Email) ?? await _context.Users.FirstOrDefaultAsync(x=>x.Email == user.Email);
+        var dbUser = await _context.Users.FirstOrDefaultAsync(x => x.Email == user.Email);
         if (dbUser != null) throw new Exception("This email already in use");
+
+        dbUser = await _context.Users.FirstOrDefaultAsync(x => x.UserName == user.Username);
+        if (dbUser != null) throw new Exception("This username already in use");
 
         string hashedPassword = HashProvider.ComputeHash(user.Password.Trim());
 
