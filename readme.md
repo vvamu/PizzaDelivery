@@ -5,7 +5,8 @@
 ---
 
 Database: WebAPI - MsSQL , Web App - PSQL.
-Project project placed by Docker-Compose.
+
+**Project project placed by Docker-Compose.**
 
 **Roles:** - Admin can execute CRUD operations with Pizza, Promocodes. Check info about Users, Orders.
            - User can execute CRUD operations with ShoppingCartItem, create Order and add Promocode.
@@ -34,4 +35,12 @@ Project project placed by Docker-Compose.
 
 ---
 
-Tags: Microservice architecture**,** Email API, Vkontakte API - Oauth2, Google API, Facebook API, Docker, Docker-compose, AutoMapper, Pagination, Option Pattern, FluentValidation, HTTPS, SQL Queries, Serilog, HostedServices, ExceptionHandlingMiddleware, XUnit
+Tags: Microservice architecture, Email API, Vkontakte API - Oauth2, Google API, Facebook API, Docker, Docker-compose, AutoMapper, Pagination, Option Pattern, FluentValidation, HTTPS, SQL Queries, Serilog, HostedServices, ExceptionHandlingMiddleware, XUnit
+
+---
+
+To check project:
+1. clone this repository
+2. open cmd in project folder
+3. enter - docker-compose build
+4. enter - docker-compose up
